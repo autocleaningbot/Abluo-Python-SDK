@@ -9,10 +9,6 @@
 from tokenize import String
 import serial, time
 
-# ser = serial.Serial('/dev/ttyACM0')
-# ser.baudrate = 9600
-# ser.write(b'sending string to Arduino')
-# ser.close()
 class abluoTool:
     def __init__(self, toolId, toolName, serialPort):
         self._toolId = toolId
@@ -64,7 +60,7 @@ class abluoTool:
  
 
 class abluoToolsApi:
-    def __init__(self, port= '/dev/ttyACM1', baudRate= 115200, **kwargs):
+    def __init__(self, port= '/dev/ttyACM0', baudRate= 115200, **kwargs):
         """
         The python wrapper controller of Abluo
 
@@ -110,7 +106,10 @@ if __name__ == "__main__":
     abluoTools._tool2.setAll(0,0,0)
 
     # Test Setting Multiple Tools
-    abluoTools.setAllTools([[1,0,0,0], [2,1,0,90]])
-    time.sleep(0.5)
+    abluoTools.setAllTools([[1,1,0,0], [2,1,0,90]])
+    time.sleep(2.5)
+    abluoTools._tool2.setDirection(1)
+    abluoTools._tool2.setSpeed(90)
     abluoTools.stopAllTools()
+
 

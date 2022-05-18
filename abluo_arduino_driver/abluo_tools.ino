@@ -1,10 +1,21 @@
-////////////////////////////////
-// This is a demo program for the rotary grabber
-//--connect the servo motor signal wire to pin 8
-//--open serial monitor with 9600 baud rate
-//--key in "1" enter, to lock the brush
-//--key in "0" enter, to release the brush
-////////////////////////////////////////////
+/***
+ * @file abluo_tools.ino
+ * @brief Abluo Tool Control Driver for Arduino Mega
+ *
+ * Takes in Serial Input of the form <toolId,status,direction,speed>
+ * Updates Data Model to store toolState
+ * Executes Software PWM to control multiple motors handling tools
+ * 
+ *  Current Tools   |           Valid Params            |                   Description                         |
+ * --------------------------------------------------------------------------------------------------------------
+ * 1. Brush Servo   : <toolId,status>                   | status: 1 - Lock, 0: Unlock
+ * 2. Brush DC      : <toolId,status,direction,speed>   | status: 1- ON, 0: OFF, direction: 1,0, speed: 0 - 100
+ * 3. Water Pump DC : <toolId,status,direction,speed>   | status: 1- ON, 0: OFF, direction: 1,0, speed: 0 - 100
+ * 4. Soap Pump DC  : <toolId,status,direction,speed>   | status: 1- ON, 0: OFF, direction: 1,0, speed: 0 - 100
+ *
+ * @author Rishab Patwari (patwariri@gmail.com)
+ * @references: https://www.baldengineer.com/software-pwm-with-millis.html
+ */
 
 #include <Servo.h>
 
@@ -14,12 +25,21 @@
 #define IN3 6
 #define ENB 7
 #define SPIN 2
+
 Servo servo;
-char input;
-String readString;
-bool dcOnA = false;
-int dutyCycleA = 0;
-int directionA = 0;
+static char *input;
+static char *token;
+
+// Tool Data Structures
+typedef struct tools
+{
+    int toolId;
+    int status;
+    int direction;
+    int speed;
+} tool;
+const int toolCount = 3;
+tool myTools[toolCount];
 
 // Input Processing Variables
 const byte numChars = 32;
@@ -28,6 +48,33 @@ const byte numInts = 4;
 int payload[4];
 boolean newData = false;
 
+// PWM Processing Variables
+#define ON true
+#define OFF false
+unsigned long currentMicros = micros();
+unsigned long previousMicros = 0;
+unsigned long microInterval = 150;
+const byte pwmMax = 100;
+
+typedef struct pwmPins
+{
+    int pin;          // Pin Number
+    int pwmValue;     // Pwm Value (duty cycle)
+    bool pinState;    // Pin Output State
+    int pwmTickCount; // PWM Counter Value
+} pwmPin;
+
+const int pinCount = 8;
+const byte pins[pinCount] = {ENA, ENB};
+pwmPin myPWMpins[pinCount];
+
+// Millis Timer
+unsigned long currentMillis = millis();
+unsigned long previousMillis = 0;
+unsigned long millisInterval = 250;
+bool detachServoNextCycle = false;
+
+// Serial Input Processing
 void recvWithEndMarker()
 {
     static byte ndx = 0;
@@ -56,121 +103,61 @@ void recvWithEndMarker()
     }
 }
 
-void showNewData()
+// Software PWM
+void setupPWMpins()
 {
-    if (newData == true)
+    for (int index = 0; index < pinCount; index++)
     {
-        Serial.print("This just in ... ");
-        Serial.println(receivedChars);
-        newData = false;
+        myPWMpins[index].pin = pins[index];
+        myPWMpins[index].pwmValue = 0;
+        myPWMpins[index].pinState = OFF;
+        myPWMpins[index].pwmTickCount = 0;
+        pinMode(pins[index], OUTPUT);
     }
 }
-void setup()
-{
-    // put your setup code here, to run once:
-    Serial.begin(115200);
-    Serial.println("<Arduino is ready>");
-    delay(1000);
-    pinMode(ENA, OUTPUT);
-    pinMode(IN1, OUTPUT);
-    pinMode(IN2, OUTPUT);
-}
 
-void runPWMA()
+void handlePWM()
 {
-    if (dcOnA)
+    currentMicros = micros();
+    // check to see if we need to increment our PWM counters yet
+    if (currentMicros - previousMicros >= microInterval)
     {
-        digitalWrite(ENA, HIGH);
-        delayMicroseconds(dutyCycleA * 200);
-        digitalWrite(ENA, LOW);
-        delayMicroseconds((100 - dutyCycleA) * 200);
-    } else {
-        digitalWrite(ENA, LOW);
+        // Increment each pin's counter
+        for (int index = 0; index < pinCount; index++)
+        {
+            myPWMpins[index].pwmTickCount++;
+
+            if (myPWMpins[index].pinState == ON)
+            {
+                if (myPWMpins[index].pwmTickCount >= myPWMpins[index].pwmValue)
+                {
+                    myPWMpins[index].pinState = OFF;
+                }
+            }
+            else
+            {
+                if (myPWMpins[index].pwmTickCount >= pwmMax)
+                {
+                    myPWMpins[index].pinState = ON;
+                    myPWMpins[index].pwmTickCount = 0;
+                }
+            }
+            digitalWrite(myPWMpins[index].pin, myPWMpins[index].pinState);
+        }
+        // reset the micros() tick counter.
+        digitalWrite(13, !digitalRead(13));
+        previousMicros = currentMicros;
     }
-    return;
 }
 
-// RUN DC MOTOR AT 50 HZ WITH PWM
-void runDc()
-{
-    runPWMA();
-}
-
-// MOTOR CONTROLLER DIRECTION SETUP FOR LM298N
-void setDcClockwise()
-{
-    digitalWrite(IN1, HIGH);
-    digitalWrite(IN2, LOW);
-}
-
-void setDcAntiClockwise()
-{
-    digitalWrite(IN1, LOW);
-    digitalWrite(IN2, HIGH);
-}
-
-void onServo()
-{
-    servo.attach(SPIN);
-    servo.write(155);
-    delay(250);
-    servo.detach();
-}
-void offServo()
-{
-    servo.attach(SPIN);
-    servo.write(179);
-    delay(250);
-    servo.detach();
-}
-
-void handleUpdate()
-{
-    int status = payload[1];
-    int direction = payload[2];
-    int speed = payload[3];
-    switch (payload[0])
-    {
-    // Brush Servo
-    case 1:
-    {
-        status == 1 ? onServo() : offServo();
-        break;
-    }
-    // Brush Dc
-    case 2:
-    {
-        dcOnA = status;
-        dutyCycleA = speed;
-        directionA = direction;
-        directionA == 1 ? setDcAntiClockwise() : setDcClockwise();
-        break;
-    }
-    // Pump 1 DC
-    case 3:
-    {
-        break;
-    }
-    // Pump 2 DC
-    case 4:
-    {
-        break;
-    }
-    default:
-        Serial.println("[ERROR] Invalid Tool ID - " + payload[1]);
-        break;
-    }
-    Serial.println("[DONE]");
-}
-
+// Process Serial Input
 void processNewData()
 {
     if (newData == true)
     {
-        char *input = receivedChars;
+        input = receivedChars;
         Serial.println(receivedChars);
         newData = false;
-        char *token;
         int counter = 0;
         while ((token = strtok_r(input, ",", &input)))
         {
@@ -182,39 +169,121 @@ void processNewData()
     newData = false;
 }
 
-void loop()
+// Handle Millis Timer - Used to Detach Servos after writing to them
+void handleMillis()
 {
-    recvWithEndMarker();
-    processNewData();
-    runDc(); // Run DC Motor PWM Loop
-    // showNewData();
-    // if (Serial.available() > 0){
-    //     String in = Serial.readString();
-    //     Serial.println(in);
-    // }
+    currentMillis = millis();
+    if (currentMillis - previousMillis >= millisInterval)
+    {
+        previousMillis = currentMillis;
+        if (detachServoNextCycle)
+        {
+            servo.detach();
+            detachServoNextCycle = false;
+        }
+    }
 }
 
-// void loop()
-// {
-//     if (Serial.available() > 0)
-//     {
-//         input = Serial.read();
-//         Serial.println(input);
-//         if (input == '1')
-//         {
-//             onServo();
-//             startDcClockwise();
-//         }
-//         else if (input == '2')
-//         {
-//             onServo();
-//             startDcAntiClockwise();
-//         }
-//         else if (input == '0')
-//         {
-//             stopDc();
-//             offServo();
-//         }
-//     }
-//     runDc();
-// }
+// MOTOR CONTROLLER DIRECTION SETUP FOR LM298N
+// DC Motor A
+void setDirA1()
+{
+    // Motor A
+    digitalWrite(IN1, HIGH);
+    digitalWrite(IN2, LOW);
+}
+void setDirA2()
+{
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, HIGH);
+}
+// DC Motor B
+void setDirB1()
+{
+}
+void setDirB2()
+{
+}
+
+void onServo()
+{
+    servo.attach(SPIN);
+    servo.write(135);
+    detachServoNextCycle = true;
+}
+void offServo()
+{
+    servo.attach(SPIN);
+    servo.write(179);
+    detachServoNextCycle = true;
+}
+
+void setupTools()
+{
+    for (int index = 1; index <= toolCount; index++)
+    {
+        myTools->toolId = index;
+        myTools->status = 0;
+        myTools->direction = 0;
+        myTools->speed = 0;
+    }
+}
+
+void handleUpdate()
+{
+    int toolId = payload[0];
+    int status = payload[1];
+    int direction = payload[2];
+    int speed = payload[3];
+    switch (toolId)
+    {
+    case 1: // Brush Servo
+    {
+        status == 1 ? onServo() : offServo();
+        myTools[0].status = status;
+        break;
+    }
+    case 2: // Brush Dc
+    {
+        myTools[1].status = status;
+        myTools[1].speed = speed;
+        myTools[1].direction = direction;
+        // Update ENA Pin based on status and speed
+        myPWMpins[0].pwmValue = myTools[1].status ? myTools[1].speed : 0;
+        myTools[1].direction == 1 ? setDirA1() : setDirA2();
+        break;
+    }
+    case 3: // Pump 1 DC
+    {
+        break;
+    }
+    case 4: // Pump 2 DC
+    {
+        break;
+    }
+    default:
+        Serial.println("[ERROR] Invalid Tool ID - " + payload[1]);
+        break;
+    }
+    Serial.println("[DONE]");
+}
+
+void setup()
+{
+    // put your setup code here, to run once:
+    Serial.begin(115200);
+    Serial.println("<Arduino is ready>");
+    delay(1000);
+    pinMode(ENA, OUTPUT);
+    pinMode(IN1, OUTPUT);
+    pinMode(IN2, OUTPUT);
+    setupPWMpins();
+}
+
+void loop()
+{
+    handlePWM();
+    handleMillis();
+    recvWithEndMarker();
+    processNewData();
+}
