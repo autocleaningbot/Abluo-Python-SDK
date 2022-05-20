@@ -68,13 +68,13 @@ class abluoToolsApi:
         :param baudRate: baudRate for connected serial microcontroller
         """
         self._serconn = serial.Serial(port, baudRate, timeout= 1)
-        self._tool1 = abluoTool(1,"Brush Servo", self._serconn)
-        self._tool2 = abluoTool(2,"Brush Motor", self._serconn)
-        self._tool3 = abluoTool(3,"Water Pump", self._serconn)
-        self._tool4 = abluoTool(4,"Soap Pump", self._serconn)
-        self._toolslist = [self._tool1, self._tool2, self._tool3, self._tool4]
+        self.tool1 = abluoTool(1,"Brush Servo", self._serconn)
+        self.tool2 = abluoTool(2,"Brush Motor", self._serconn)
+        self.tool3 = abluoTool(3,"Water Pump", self._serconn)
+        self.tool4 = abluoTool(4,"Soap Pump", self._serconn)
+        self._toolslist = [self.tool1, self.tool2, self.tool3, self.tool4]
 
-    def setAllTools(self, commandsArray):
+    def setAllTools(self, *commandsArray):
         """Sets multiple tools at the same time. Requires (toolId, status, direction , speed)"""
         for commands in commandsArray:
             for tool in self._toolslist:
@@ -89,27 +89,60 @@ class abluoToolsApi:
         self._serconn.close()
         print("[INFO] Closed Serial Connection With Microcontroller")
 
-
 if __name__ == "__main__":
     abluoTools = abluoToolsApi()
 
     # Test Brush Servo
-    abluoTools._tool1.setStatus(1)
-    time.sleep(0.1)
-    abluoTools._tool1.setStatus(0)
+    print("[TEST] Brush Servo - Started")
+    abluoTools.tool1.setStatus(0)
+    time.sleep(1)
+    abluoTools.tool1.setStatus(1)
+    time.sleep(1)
+    abluoTools.tool1.setStatus(0)
+    time.sleep(1)
+    print("[TEST] Brush Servo - Completed\n")
 
-    # Test Brush Motor
-    abluoTools._tool1.setStatus(1) # Lock Servo
-    abluoTools._tool2.setAll(1,1,50)
-    time.sleep(0.1)
-    abluoTools._tool2.setAll(1,0,50)
-    abluoTools._tool2.setAll(0,0,0)
+    # # Test Brush Motor
+    print("[TEST] Brush DC - Started")
+    print("[TEST] Brush DC - Direction 1, Max Speed")
+    abluoTools.tool2.setAll(1,0,100)
+    time.sleep(1)
+    print("[TEST] Brush DC - Direction 2, Max Speed")
+    abluoTools.tool2.setAll(1,1,100)
+    time.sleep(1)
+    print("[TEST] Brush DC - Speed Test [75%, 50%, 10%, STOP]")
+    abluoTools.tool2.setAll(1,1,75)
+    time.sleep(1)
+    abluoTools.tool2.setAll(1,1,50)
+    time.sleep(1)
+    abluoTools.tool2.setAll(1,1,10)
+    time.sleep(1)
+    abluoTools.tool2.setStatus(0)
+    print("[TEST] Brush DC - Completed\n")
 
-    # Test Setting Multiple Tools
-    abluoTools.setAllTools([[1,1,0,0], [2,1,0,90]])
-    time.sleep(2.5)
-    abluoTools._tool2.setDirection(1)
-    abluoTools._tool2.setSpeed(90)
+
+    # # Test Water Pump 1
+    print("[TEST] Water Pump 1 DC - Started")
+    print("[TEST] Water Pump 1 DC - Direction 1, Max Speed")
+    abluoTools.tool3.setAll(1,0,100)
+    time.sleep(1)
+    print("[TEST] Water Pump 1 DC - Direction 2, Max Speed")
+    abluoTools.tool3.setAll(1,1,100)
+    time.sleep(1)
+    print("[TEST] Water Pump 1 DC - Speed Test [75%, 50%, STOP]")
+    abluoTools.tool3.setAll(1,1,75)
+    time.sleep(1)
+    abluoTools.tool3.setAll(1,1,50)
+    time.sleep(1)
+    abluoTools.tool3.setStatus(0)
+    print("[TEST] Water Pump 1 DC - Completed\n")
+
+    # Test Water Pump & DC Motor PWM Working together
+    print("[TEST] Mult PWM - Started")
+    abluoTools.setAllTools([2,1,0,90], [3,1,0,90])
+    time.sleep(1)
     abluoTools.stopAllTools()
+    print("[TEST] Multi PWM - Completed\n")
+
 
 

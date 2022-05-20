@@ -19,11 +19,22 @@
 
 #include <Servo.h>
 
+// Motor Controller 1
 #define ENA 3
+#define ENB 8
 #define IN1 4
 #define IN2 5
 #define IN3 6
-#define ENB 7
+#define IN4 7
+
+// Motor Controller 2
+#define ENA_2 32
+#define ENB_2 30
+#define IN1_2 28
+#define IN2_2 26
+#define IN3_2 24
+#define IN4_2 22
+
 #define SPIN 2
 
 Servo servo;
@@ -64,9 +75,13 @@ typedef struct pwmPins
     int pwmTickCount; // PWM Counter Value
 } pwmPin;
 
-const int pinCount = 8;
-const byte pins[pinCount] = {ENA, ENB};
-pwmPin myPWMpins[pinCount];
+const int pwmPinCount = 4; //Can have maximum 8
+const byte pwmPins[pwmPinCount] = {ENA, ENB, ENA_2, ENB_2};
+pwmPin myPWMpins[pwmPinCount];
+
+// Digital Pins (Pins not used for Software PWM Generation)
+const byte digitalPinCount = 8;
+const byte digitalPins[digitalPinCount] = {IN1, IN2, IN3, IN4, IN1_2, IN2_2, IN3_2, IN4_2};
 
 // Millis Timer
 unsigned long currentMillis = millis();
@@ -106,13 +121,13 @@ void recvWithEndMarker()
 // Software PWM
 void setupPWMpins()
 {
-    for (int index = 0; index < pinCount; index++)
+    for (int index = 0; index < pwmPinCount; index++)
     {
-        myPWMpins[index].pin = pins[index];
+        myPWMpins[index].pin = pwmPins[index];
         myPWMpins[index].pwmValue = 0;
         myPWMpins[index].pinState = OFF;
         myPWMpins[index].pwmTickCount = 0;
-        pinMode(pins[index], OUTPUT);
+        pinMode(pwmPins[index], OUTPUT);
     }
 }
 
@@ -123,7 +138,7 @@ void handlePWM()
     if (currentMicros - previousMicros >= microInterval)
     {
         // Increment each pin's counter
-        for (int index = 0; index < pinCount; index++)
+        for (int index = 0; index < pwmPinCount; index++)
         {
             myPWMpins[index].pwmTickCount++;
 
@@ -188,7 +203,6 @@ void handleMillis()
 // DC Motor A
 void setDirA1()
 {
-    // Motor A
     digitalWrite(IN1, HIGH);
     digitalWrite(IN2, LOW);
 }
@@ -200,9 +214,13 @@ void setDirA2()
 // DC Motor B
 void setDirB1()
 {
+    digitalWrite(IN3, HIGH);
+    digitalWrite(IN4, LOW);
 }
 void setDirB2()
 {
+    digitalWrite(IN3, LOW);
+    digitalWrite(IN4, HIGH);
 }
 
 void onServo()
@@ -248,21 +266,36 @@ void handleUpdate()
         myTools[1].status = status;
         myTools[1].speed = speed;
         myTools[1].direction = direction;
+        // Set Direction
+        myTools[1].direction == 1 ? setDirA1() : setDirA2();
         // Update ENA Pin based on status and speed
         myPWMpins[0].pwmValue = myTools[1].status ? myTools[1].speed : 0;
-        myTools[1].direction == 1 ? setDirA1() : setDirA2();
         break;
     }
     case 3: // Pump 1 DC
     {
+        myTools[2].status = status;
+        myTools[2].speed = speed;
+        myTools[2].direction = direction;
+        // Set Direction
+        myTools[2].direction == 1 ? setDirB1() : setDirB2();
+        // Update ENB Pin based on status and speed
+        myPWMpins[1].pwmValue = myTools[2].status ? myTools[2].speed : 0;
         break;
     }
     case 4: // Pump 2 DC
+        myTools[3].status = status;
+        myTools[3].speed = speed;
+        myTools[3].direction = direction;
+        // Set Direction
+        myTools[3].direction == 1 ? setDirB1() : setDirB2();
+        // Update ENB Pin based on status and speed
+        myPWMpins[2].pwmValue = myTools[3].status ? myTools[3].speed : 0;
     {
         break;
     }
     default:
-        Serial.println("[ERROR] Invalid Tool ID - " + payload[1]);
+        Serial.println("[ERROR] Invalid Tool ID - " + payload[0]);
         break;
     }
     Serial.println("[DONE]");
@@ -274,9 +307,9 @@ void setup()
     Serial.begin(115200);
     Serial.println("<Arduino is ready>");
     delay(1000);
-    pinMode(ENA, OUTPUT);
-    pinMode(IN1, OUTPUT);
-    pinMode(IN2, OUTPUT);
+    for (int index = 0; index < digitalPinCount; index++){
+        pinMode(digitalPins[index], OUTPUT);
+    }
     setupPWMpins();
 }
 
