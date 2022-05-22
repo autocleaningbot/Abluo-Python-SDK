@@ -5,7 +5,7 @@
  * Takes in Serial Input of the form <toolId,status,direction,speed>
  * Updates Data Model to store toolState
  * Executes Software PWM to control multiple motors handling tools
- * 
+ *
  *  Current Tools   |           Valid Params            |                   Description                         |
  * --------------------------------------------------------------------------------------------------------------
  * 1. Brush Servo   : <toolId,status>                   | status: 1 - Lock, 0: Unlock
@@ -63,10 +63,15 @@ boolean newData = false;
 #define ON true
 #define OFF false
 unsigned long currentMicros = micros();
-unsigned long previousMicros = 0;
-unsigned long microInterval = 150;
-const byte pwmMax = 100;
-
+// Controller A (150 us x 100 Count = 15 ms Period / 66 Hz)
+unsigned long previousMicros_CA = 0;
+unsigned long microInterval_CA = 150;
+const byte pwmMax_CA = 100;
+// Controller B (1us x 58 Count = 58 us Period / 17.2 kHz)
+unsigned long previousMicros_CB = 0;
+unsigned long microInterval_CB = 1;
+const byte pwmMax_CB = 58;
+// PWM Pin Data Structure
 typedef struct pwmPins
 {
     int pin;          // Pin Number
@@ -75,9 +80,15 @@ typedef struct pwmPins
     int pwmTickCount; // PWM Counter Value
 } pwmPin;
 
-const int pwmPinCount = 4; //Can have maximum 8
-const byte pwmPins[pwmPinCount] = {ENA, ENB, ENA_2, ENB_2};
+// Motor Controller A - LM298N (Control Brush Motors)
+const int pwmPinCount = 2; // Can have maximum 8
+const byte pwmPins[pwmPinCount] = {ENA, ENB};
 pwmPin myPWMpins[pwmPinCount];
+
+// Motor Controller B - Control DC Motor Wheels
+const int pwmPinCount_CB = 4;
+const byte pwmPins_CB[pwmPinCount_CB] = {ENA_2, ENB_2};
+pwmPin myPWMpins_CB[pwmPinCount_CB];
 
 // Digital Pins (Pins not used for Software PWM Generation)
 const byte digitalPinCount = 8;
@@ -131,11 +142,23 @@ void setupPWMpins()
     }
 }
 
+void setupPWMpins_CB()
+{
+    for (int index = 0; index < pwmPinCount; index++)
+    {
+        myPWMpins_CB[index].pin = pwmPins_CB[index];
+        myPWMpins_CB[index].pwmValue = 0;
+        myPWMpins_CB[index].pinState = OFF;
+        myPWMpins_CB[index].pwmTickCount = 0;
+        pinMode(pwmPins_CB[index], OUTPUT);
+    }
+}
+
 void handlePWM()
 {
     currentMicros = micros();
     // check to see if we need to increment our PWM counters yet
-    if (currentMicros - previousMicros >= microInterval)
+    if (currentMicros - previousMicros_CA >= microInterval_CA) // Counter Period = 150us (100 x 150us = 15 ms Period /66Hz)
     {
         // Increment each pin's counter
         for (int index = 0; index < pwmPinCount; index++)
@@ -151,7 +174,7 @@ void handlePWM()
             }
             else
             {
-                if (myPWMpins[index].pwmTickCount >= pwmMax)
+                if (myPWMpins[index].pwmTickCount >= pwmMax_CA)
                 {
                     myPWMpins[index].pinState = ON;
                     myPWMpins[index].pwmTickCount = 0;
@@ -161,7 +184,32 @@ void handlePWM()
         }
         // reset the micros() tick counter.
         digitalWrite(13, !digitalRead(13));
-        previousMicros = currentMicros;
+        previousMicros_CA = currentMicros;
+    }
+    if (currentMicros - previousMicros_CB >= microInterval_CB)
+    { // Counter Period = 1 us (58 x 1 us = 58 us Period / 17.2 kHz
+        // Increment each pin's counter
+        for (int index = 0; index < pwmPinCount_CB; index++)
+        {
+            myPWMpins_CB[index].pwmTickCount++;
+
+            if (myPWMpins_CB[index].pinState == ON)
+            {
+                if (myPWMpins_CB[index].pwmTickCount >= myPWMpins_CB[index].pwmValue)
+                {
+                    myPWMpins_CB[index].pinState = OFF;
+                }
+            }
+            else
+            {
+                if (myPWMpins_CB[index].pwmTickCount >= pwmMax_CA)
+                {
+                    myPWMpins_CB[index].pinState = ON;
+                    myPWMpins_CB[index].pwmTickCount = 0;
+                }
+            }
+            digitalWrite(myPWMpins_CB[index].pin, myPWMpins_CB[index].pinState);
+        }
     }
 }
 
@@ -221,6 +269,31 @@ void setDirB2()
 {
     digitalWrite(IN3, LOW);
     digitalWrite(IN4, HIGH);
+}
+
+// DC Motor A2
+void setDirA1_2()
+{
+    digitalWrite(IN1_2, HIGH);
+    digitalWrite(IN2_2, LOW);
+}
+
+void setDirA2_2()
+{
+    digitalWrite(IN1_2, LOW);
+    digitalWrite(IN2_2, HIGH);
+}
+
+void setDirB1_2()
+{
+    digitalWrite(IN3_2, HIGH);
+    digitalWrite(IN4_2, LOW);
+}
+
+void setDirB2_2()
+{
+    digitalWrite(IN3_2, LOW);
+    digitalWrite(IN4_2, HIGH);
 }
 
 void onServo()
@@ -283,20 +356,63 @@ void handleUpdate()
         myPWMpins[1].pwmValue = myTools[2].status ? myTools[2].speed : 0;
         break;
     }
-    case 4: // Pump 2 DC
+    case 4: // Wheel Controller 1 - Motor Controller 2
+    {
+        if (myTools[3].status && !status)
+        {
+            // Brake
+            digitalWrite(IN1_2, LOW);
+            digitalWrite(IN2_2, LOW);
+            myTools[3].status = 0;
+        }
         myTools[3].status = status;
         myTools[3].speed = speed;
-        myTools[3].direction = direction;
-        // Set Direction
-        myTools[3].direction == 1 ? setDirB1() : setDirB2();
-        // Update ENB Pin based on status and speed
-        myPWMpins[2].pwmValue = myTools[3].status ? myTools[3].speed : 0;
+        if (myTools[3].status)
+        {
+            if (direction != myTools[3].direction)
+            {
+                myTools[3].direction = direction;
+                digitalWrite(IN1_2, LOW);
+                digitalWrite(IN2_2, LOW);
+            }
+
+            myTools[3].direction == 1 ? setDirA1_2() : setDirA2_2();
+        }
+        // Update EN Pin based on status and speed
+        myPWMpins_CB[0].pwmValue = myTools[3].status ? myTools[3].speed : 0;
+        break;
+    }
+    case 5:
     {
+        if (myTools[4].status && !status)
+        {
+            // Brake
+            digitalWrite(IN3_2, LOW);
+            digitalWrite(IN4_2, LOW);
+            myTools[4].status = 0;
+        }
+        myTools[4].status = status;
+        myTools[4].speed = speed;
+        if (myTools[4].status)
+        {
+            if (direction != myTools[4].direction)
+            {
+                myTools[4].direction = direction;
+                digitalWrite(IN3_2, LOW);
+                digitalWrite(IN4_2, LOW);
+            }
+
+            myTools[4].direction == 1 ? setDirB1_2() : setDirB2_2();
+        }
+        // Update EN Pin based on status and speed
+        myPWMpins_CB[1].pwmValue = myTools[4].status ? myTools[4].speed : 0;
         break;
     }
     default:
+    {
         Serial.println("[ERROR] Invalid Tool ID - " + payload[0]);
         break;
+    }
     }
     Serial.println("[DONE]");
 }
@@ -307,10 +423,12 @@ void setup()
     Serial.begin(115200);
     Serial.println("<Arduino is ready>");
     delay(1000);
-    for (int index = 0; index < digitalPinCount; index++){
+    for (int index = 0; index < digitalPinCount; index++)
+    {
         pinMode(digitalPins[index], OUTPUT);
     }
     setupPWMpins();
+    setupPWMpins_CB();
 }
 
 void loop()
