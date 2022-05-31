@@ -2,32 +2,29 @@
    @file abluo_Motors.ino
    @brief Abluo Motor Control Driver for Arduino Mega
 
-   Takes in Serial Input of the form <MotorId,status,direction,speed>
+   Takes in Serial Input of the form <motorId,status,direction,speed>
    Updates Data Model to store MotorState
    Executes Software PWM to control multiple motors handling Motors
 
     Current Motors         |           Valid Params            |                   Description                         |
    --------------------------------------------------------------------------------------------------------------
-   1. M0  - Brush Servo   | <MotorId,status>                   | status: 1 - Lock, 0: Unlock
-   2. M1A - Brush DC      | <MotorId,status,direction,speed>   | status: 1- ON, 0: OFF, direction: 1,0, speed: 0 - 100
-   3. M1B - Water Pump DC | <MotorId,status,direction,speed>   | status: 1- ON, 0: OFF, direction: 1,0, speed: 0 - 100
-   4. M2A - Wheel 1       | <MotorId,status,direction,speed>   | status: 1- ON, 0: OFF, direction: 1,0, speed: 0 - 100
+   1. M0  - Brush Servo   | <motorId,status>                   | status: 1 - Lock, 0: Unlock
+   2. M1A - Brush DC      | <motorId,status,direction,speed>   | status: 1- ON, 0: OFF, direction: 1,0, speed: 0 - 100
+   3. M1B - Water Pump DC | <motorId,status,direction,speed>   | status: 1- ON, 0: OFF, direction: 1,0, speed: 0 - 100
+   4. M2A - Wheel 1       | <motorId,status,direction,speed>   | status: 1- ON, 0: OFF, direction: 1,0, speed: 0 - 100
 
    @author Rishab Patwari (patwariri@gmail.com)
    @references: https://www.baldengineer.com/software-pwm-with-millis.html
 */
-#include <Servo.h>
 #include "src/SERIAL_PROCESSING.h"
 #include "src/PWM_PROCESSING.h"
 
 #define BAUD_RATE 115200
 // DC Controller 1 - Motor 1
-// #define M1A_EN 39
-// #define M1_IN1 35
-// #define M1_IN2 37
-#define M1A_EN 9
-#define M1_IN1 10
-#define M1_IN2 11
+#define M1A_EN 39
+#define M1_IN1 35
+#define M1_IN2 37
+
 // DC Controller 1 - Motor 2
 #define M1B_EN 38
 #define M1_IN3 36
@@ -38,9 +35,12 @@
 #define M2_IN1 48
 #define M2_IN2 46
 // DC Controller 2 - Motor 2
-#define M2B_EN 51
-#define M2_IN3 47
-#define M2_IN4 49
+// #define M2B_EN 51
+// #define M2_IN3 47
+// #define M2_IN4 49
+#define M2B_EN 9
+#define M2_IN3 10
+#define M2_IN4 11
 
 // Servo Controller Pin
 #define SPIN 2
@@ -48,44 +48,43 @@
 bool settingUp = true;
 
 typedef void (*functiontype)();
-Servo servo;
 unsigned long currentMicros = micros();
 
 // Controller M2: Motor PWM Controller
 // Frequency: (1us x 58 Count = 58 us Period / 17.2 kHz)
-const byte motorMicroInterval = 150;
+const byte motorMicroInterval = 1;
 const byte motorPwmMax = 100;
-const byte motorPinsCount = 1;
+const byte motorPinsCount = 4;
 const byte motorPwmPins[motorPinsCount] =
     {
         M1A_EN,
-        // M1B_EN
-        // , M2A_EN, M2B_EN
+        M1B_EN
+        , M2A_EN, M2B_EN
 };
 PWM_PROCESSING pwmMotorsController;
 
 // Motor Data Structures
 struct Motor
 {
-  int MotorId;
+  int motorId;
   int status;
   int direction;
   int speed;
 };
-const byte MotorCount = 1;
+const byte MotorCount = 4;
 Motor myMotors[MotorCount];
 
 // Digital Pins (Pins not used for Software PWM Generation)
-const byte digitalPinCount = 2;
+const byte digitalPinCount = 8;
 const byte digitalPins[digitalPinCount] = {
     M1_IN1,
     M1_IN2,
-    // M1_IN3,
-    // M1_IN4,
-    // M2_IN1,
-    // M2_IN2,
-    // M2_IN3,
-    // M2_IN4
+    M1_IN3,
+    M1_IN4,
+    M2_IN1,
+    M2_IN2,
+    M2_IN3,
+    M2_IN4
 };
 
 // Millis Timer
@@ -102,16 +101,6 @@ void processNewData()
     handleUpdate();
   }
   newData = false;
-}
-
-// Handle Millis Timer
-void handleMillis()
-{
-  currentMillis = millis();
-  if (currentMillis - previousMillis >= millisInterval)
-  {
-    previousMillis = currentMillis;
-  }
 }
 
 // MOTOR CONTROLLERS DIRECTION & BRAKE
@@ -185,7 +174,7 @@ void setupMotors()
 {
   for (int index = 1; index <= MotorCount; index++)
   {
-    myMotors->MotorId = index;
+    myMotors->motorId = index;
     myMotors->status = 0;
     myMotors->direction = 0;
     myMotors->speed = 0;
@@ -194,24 +183,19 @@ void setupMotors()
 
 void handleDcMotor(int payload[], functiontype setDir_1, functiontype setDir_2, functiontype brake)
 {
-  int MotorIndex = payload[0] - 1;
-  int pwmEnPinValue = motorPwmPins[MotorIndex];
+  int motorIndex = payload[0] - 1;
   int status = payload[1];
   int direction = payload[2];
   int speed = payload[3];
 
-  myMotors[MotorIndex].status = status;
-  myMotors[MotorIndex].speed = speed;
-
-  if (myMotors[MotorIndex].status)
+  myMotors[motorIndex].status = status;
+  myMotors[motorIndex].speed = speed;
+  myMotors[motorIndex].direction = direction;
+  if (myMotors[motorIndex].status)
   {
-    if (direction != myMotors[MotorIndex].direction)
-    {
-      myMotors[MotorIndex].direction = direction;
-      myMotors[MotorIndex].direction == 1 ? setDir_1() : setDir_2();
-    }
-    // pwmMotorsController.updatePinPwmDutyCycle(pwmEnPinValue, speed);
-    //  pwmMotorsController.updatePinPwmValue(pwmEnPinValue, speed);
+      myMotors[motorIndex].direction == 1 ? setDir_1() : setDir_2();
+    pwmMotorsController.updatePinPwmDutyCycle(motorIndex, speed, pwmMaxMultiplier);
+    // pwmMotorsController.updatePinPwmValue(motorIndex, speed);
     // analogWrite(pwmEnPinValue, speed*0.01*255);
   }
   else
@@ -229,8 +213,8 @@ void handleServo(int status, functiontype onServo, functiontype offServo)
 
 void handleUpdate()
 {
-  int MotorId = payload[0];
-  switch (MotorId)
+  int motorId = payload[0];
+  switch (motorId)
   {
   case 1: // M1_A - Front Left
   {

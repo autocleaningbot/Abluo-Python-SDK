@@ -2,19 +2,19 @@
 #define PWM_PROCESSING_H
 #define ON true
 #define OFF false
+#define MAX_DC_MOTOR_COUNT 8
 #include <Arduino.h>
-
-struct pwmPin
-{
-    int pin;          // Pin Number
-    int pwmValue;     // Pwm Value (duty cycle)
-    bool pinState;    // Pin Output State
-    int pwmTickCount; // PWM Counter Value
-};
 
 class PWM_PROCESSING
 {
 public:
+    struct pwmPin
+    {
+        unsigned int pin;          // Pin Number
+        unsigned int pwmValue;     // Pwm Value (duty cycle)
+        bool pinState;    // Pin Output State
+        unsigned int pwmTickCount; // PWM Counter Value
+    };
     PWM_PROCESSING(){};
     ~PWM_PROCESSING(){};
     void init(int microInterval, int pwmMax, const byte *pwmPins, const byte pwmPinsCount);
@@ -23,11 +23,10 @@ public:
     void updatePinPwmDutyCycle(int pinIndex, int dutyCycle);
     void setupPWMpins(const byte *pwmPins);
 private:
-    unsigned long currentMicros;
     unsigned long previousMicros;
     unsigned long microInterval;
-    pwmPin* myPWMpinsArray;
-    int pwmPinCount;
-    int pwmMax;
+    pwmPin myPWMpinsArray[MAX_DC_MOTOR_COUNT];
+    unsigned int pwmPinCount;
+    unsigned int pwmMax;
 };
 #endif

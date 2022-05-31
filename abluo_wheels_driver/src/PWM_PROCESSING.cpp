@@ -14,7 +14,6 @@ void PWM_PROCESSING::init(int microInterval, int pwmMax, const byte *pwmPins, co
     this->pwmMax = pwmMax;
     this->pwmPinCount = pwmPinsCount;
     this->setupPWMpins(pwmPins);
-    this->currentMicros = micros();
 }
 
 /**
@@ -29,7 +28,7 @@ void PWM_PROCESSING::init(int microInterval, int pwmMax, const byte *pwmPins, co
  */
 void PWM_PROCESSING::handlePWM()
 {
-    currentMicros = micros();
+    unsigned long currentMicros = micros();
     if (currentMicros - previousMicros >= microInterval)
     {
         for (int index = 0; index < pwmPinCount; index++)
@@ -50,7 +49,7 @@ void PWM_PROCESSING::handlePWM()
                     myPWMpinsArray[index].pwmTickCount = 0;
                 }
             }
-            // digitalWrite(myPWMpinsArray[index].pin, myPWMpinsArray[index].pinState);
+            digitalWrite(myPWMpinsArray[index].pin, myPWMpinsArray[index].pinState);
         }
         previousMicros = currentMicros;
     }
@@ -58,20 +57,18 @@ void PWM_PROCESSING::handlePWM()
 
 void PWM_PROCESSING::updatePinPwmValue(int pinIndex, int newPwmValue)
 {
-    myPWMpinsArray[pinIndex].pwmValue = newPwmValue;
+    this->myPWMpinsArray[pinIndex].pwmValue = newPwmValue;
 }
 void PWM_PROCESSING::updatePinPwmDutyCycle(int pinIndex, int dutyCycle)
 {
-    myPWMpinsArray[pinIndex].pwmValue = dutyCycle / pwmMax * 100;
+    this->myPWMpinsArray[pinIndex].pwmValue = dutyCycle*0.01*pwmMax;
 }
 
 void PWM_PROCESSING::setupPWMpins(const byte *pwmPins)
 {
     for (int index = 0; index < pwmPinCount; index++)
     {
-        myPWMpinsArray[index] = (pwmPin){.pin = pwmPins[index], .pwmValue = 255, .pinState = ON, .pwmTickCount = 0};
+        myPWMpinsArray[index] = (pwmPin){.pin = pwmPins[index], .pwmValue = 0, .pinState = ON, .pwmTickCount = 0};
         pinMode(pwmPins[index], OUTPUT);
-        // sprintf(buffer, "PWM_PIN: %d [pwmVal: %d, pinState: %d, pwmTickCount: %d]", myPWMpinsArray[index].pin, myPWMpinsArray[index].pwmValue, myPWMpinsArray[index].pinState, myPWMpinsArray[index].pwmTickCount);
-        // Serial.println(buffer);
     }
 }
