@@ -5,7 +5,7 @@
 namespace LibSerialConstants
 {
     const byte numChars = 32;
-    const byte numInputs = 4;
+    const byte numInputs = 10;
 }
 
 extern boolean newData;

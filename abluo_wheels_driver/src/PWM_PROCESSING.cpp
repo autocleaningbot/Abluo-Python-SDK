@@ -7,13 +7,14 @@
  * @param pwmMax
  * @param pwmPins
  */
-void PWM_PROCESSING::init(int microInterval, int pwmMax, const byte* pwmPins)
+void PWM_PROCESSING::init(int microInterval, int pwmMax, const byte *pwmPins, const byte pwmPinsCount)
 {
     this->previousMicros = 0;
     this->microInterval = microInterval;
     this->pwmMax = pwmMax;
-    this->pwmPinCount = sizeof(pwmPins)/sizeof(pwmPins[0]);
+    this->pwmPinCount = pwmPinsCount;
     this->setupPWMpins(pwmPins);
+    this->currentMicros = micros();
 }
 
 /**
@@ -28,7 +29,7 @@ void PWM_PROCESSING::init(int microInterval, int pwmMax, const byte* pwmPins)
  */
 void PWM_PROCESSING::handlePWM()
 {
-    unsigned long currentMicros = micros();
+    currentMicros = micros();
     if (currentMicros - previousMicros >= microInterval)
     {
         for (int index = 0; index < pwmPinCount; index++)
@@ -49,7 +50,7 @@ void PWM_PROCESSING::handlePWM()
                     myPWMpinsArray[index].pwmTickCount = 0;
                 }
             }
-            digitalWrite(myPWMpinsArray[index].pin, myPWMpinsArray[index].pinState);
+            // digitalWrite(myPWMpinsArray[index].pin, myPWMpinsArray[index].pinState);
         }
         previousMicros = currentMicros;
     }
@@ -57,18 +58,20 @@ void PWM_PROCESSING::handlePWM()
 
 void PWM_PROCESSING::updatePinPwmValue(int pinIndex, int newPwmValue)
 {
-        this->myPWMpinsArray[pinIndex].pwmValue = newPwmValue;
+    myPWMpinsArray[pinIndex].pwmValue = newPwmValue;
+}
+void PWM_PROCESSING::updatePinPwmDutyCycle(int pinIndex, int dutyCycle)
+{
+    myPWMpinsArray[pinIndex].pwmValue = dutyCycle / pwmMax * 100;
 }
 
 void PWM_PROCESSING::setupPWMpins(const byte *pwmPins)
 {
     for (int index = 0; index < pwmPinCount; index++)
     {
-        myPWMpinsArray[index].pin = pwmPins[index];
-        myPWMpinsArray[index].pwmValue = 0;
-        myPWMpinsArray[index].pinState = OFF;
-        myPWMpinsArray[index].pwmTickCount = 0;
+        myPWMpinsArray[index] = (pwmPin){.pin = pwmPins[index], .pwmValue = 255, .pinState = ON, .pwmTickCount = 0};
         pinMode(pwmPins[index], OUTPUT);
-        pwmPin currentPin = myPWMpinsArray[index];
+        // sprintf(buffer, "PWM_PIN: %d [pwmVal: %d, pinState: %d, pwmTickCount: %d]", myPWMpinsArray[index].pin, myPWMpinsArray[index].pwmValue, myPWMpinsArray[index].pinState, myPWMpinsArray[index].pwmTickCount);
+        // Serial.println(buffer);
     }
 }
