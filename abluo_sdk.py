@@ -6,6 +6,7 @@
 #
 # Author: Rishab <rishab@hivebotics.tech> <patwariri@gmail.com>
 
+import enum
 from tokenize import String
 import serial
 import time
@@ -62,7 +63,7 @@ class abluoTool:
 
 
 class abluoToolsApi:
-    def __init__(self, port='/dev/ttyACM0', baudRate=2000000, **kwargs):
+    def __init__(self, port='/dev/ttyACM0', baudRate=115200, **kwargs):
         """
         The python wrapper controller of Abluo
 
@@ -91,9 +92,69 @@ class abluoToolsApi:
         self._serconn.close()
         print("[INFO] Closed Serial Connection With Microcontroller")
 
-if __name__ == "__main__":
-    abluoTools = abluoToolsApi()
 
+class abluoWheelsApi:
+    class WHEEL_INDEX(enum.Enum):
+        FRONT_LEFT = 0,
+        FRONT_RIGHT = 1,
+        BACK_LEFT = 2,
+        BACK_RIGHT = 3
+    
+    class MOTION_DIRECTION(enum.Enum):
+        FORWARD = 0,
+        BACKWARD = 1,
+        LEFT = 2,
+        RIGHT = 3,
+        FORWARD_RIGHT = 4,
+        FORWARD_LEFT = 5,
+        BACKWARD_RIGHT = 6,
+        BACKWARD_LEFT = 7,
+        CLOCKWISE = 8,
+        ANTI_CLOCKWISE = 9
+    
+    class COMMAND_IDS(enum.Enum):
+        MOVEMENT_WITH_DURATION = 1,
+        CONTINOUS_MOVEMENT = 2,
+        STOP_WHEELS = 3
+        UPDATE_PARTICULAR_WHEEL = 4
+    
+    class WHEEL_DIRECTION(enum.Enum):
+        FORWARD = 0,
+        BACKWARD = 1
+
+
+    def __init__(self, port='/dev/ttyACM0', baudRate=115200, **kwargs):
+        """
+        Sends commands to wheel controller
+
+        :param port: port name of connected serial microcontroller
+        :param baudRate: baudRate for connected serial microcontroller
+        """
+        self._serconn = serial.Serial(port, baudRate, timeout=1)
+
+    def sendDurationMovementCommand(self, motionDirection, speed, duration):
+        self.sendSerial(self.COMMAND_IDS.MOVEMENT_WITH_DURATION, motionDirection, speed, duration)
+
+    def sendContinuousMovementCommand(self, motionDirection, speed):
+        self.sendSerial(self.COMMAND_IDS.CONTINOUS_MOVEMENT, motionDirection, speed)
+
+    def sendWheelMotorStatus(self, wheelDirection, speed, motorIndex, status):
+        self.sendSerial(self.COMMAND_IDS.UPDATE_PARTICULAR_WHEEL, wheelDirection, speed, motorIndex, status)
+
+    def stopAllWheels(self):
+        self.sendSerial(self.COMMAND_IDS.STOP_WHEELS)
+
+    def sendSerial(self, command, param1=0, param2=0, param3=0):
+        payload = "{},{},{},{}\n".format(command, param1, param2, param3)
+        # payload = (b'sending string to Arduino')
+        self._serialPort.write(payload.encode())
+
+    def __del__(self):
+        self._serconn.close()
+        print("[INFO] Closed Serial Connection With Microcontroller")
+
+
+def testTools():
     # Test Brush Servo
     print("[TEST] Brush Servo - Started")
     abluoTools.tool1.setStatus(0)
@@ -144,3 +205,20 @@ if __name__ == "__main__":
     time.sleep(1)
     abluoTools.stopAllTools()
     print("[TEST] Multi PWM - Completed\n")
+
+def testMovement():
+    # Go Forward
+    abluoWheels.sendDurationMovementCommand(abluoWheels.MOTION_DIRECTION.FORWARD, 15, 1500)
+    # Go Right
+    abluoWheels.sendDurationMovementCommand(abluoWheels.MOTION_DIRECTION.RIGHT, 20, 1500)
+    # Go Backward
+    abluoWheels.sendDurationMovementCommand(abluoWheels.MOTION_DIRECTION.BACKWARD,15,1500)
+    # Go Left
+
+
+
+
+if __name__ == "__main__":
+    abluoTools = abluoToolsApi(port='/dev/ttyACM0')
+    abluoWheels = abluoWheelsApi(port='/dev/ttyACM1')
+    testMovement()
