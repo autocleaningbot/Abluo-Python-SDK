@@ -21,24 +21,26 @@
 #include "src/SERIAL_PROCESSING.h"
 #include "src/PWM_PROCESSING.h"
 
-// Motor Controller 1 - Tool Controller
-#define M1A_EN 3
-#define M1_IN1 4
-#define M1_IN2 5
-#define M1_IN3 6
-#define M1_IN4 7
+// Motor Controller 1 - Tool Controller 1: DC Motor + Water Pump
+#define M1A_EN 13
+#define M1_IN1 12
+#define M1_IN2 11
+#define M1_IN3 10
+#define M1_IN4 9
 #define M1B_EN 8
 
-// Motor Controller 2 - Wheel Controller 1
-#define M2_IN1 28
-#define M2_IN2 26
-#define M2_IN3 24
-#define M2_IN4 22
-#define M2A_EN 32
-#define M2B_EN 30
-
 // Servo Controller Pin
-#define SPIN 2
+#define SPIN 7
+
+// Motor Controller 2 - Wheel Controller 1
+#define M2A_EN 6
+#define M2_IN1 5
+#define M2_IN2 4
+#define M2_IN3 3
+#define M2_IN4 2
+#define M2B_EN 1
+
+
 
 Servo servo;
 unsigned long currentMicros = micros();
@@ -283,7 +285,7 @@ void handleUpdate()
 void setup()
 {
     // put your setup code here, to run once:
-    Serial.begin(2000000);
+    Serial.begin(115200);
     Serial.println("<Arduino is ready>");
     delay(1000);
     for (int index = 0; index < digitalPinCount; index++)
