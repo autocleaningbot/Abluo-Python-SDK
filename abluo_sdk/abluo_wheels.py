@@ -94,33 +94,38 @@ class abluoToolsApi:
 
 
 class abluoWheelsApi:
-    class WHEEL_INDEX(enum.Enum):
-        FRONT_LEFT = 0,
-        FRONT_RIGHT = 1,
-        BACK_LEFT = 2,
+    class WHEEL_INDEX():
+        FRONT_LEFT = 0
+        FRONT_RIGHT = 1
+        BACK_LEFT = 2
         BACK_RIGHT = 3
     
-    class MOTION_DIRECTION(enum.Enum):
-        FORWARD = 0,
-        BACKWARD = 1,
-        LEFT = 2,
-        RIGHT = 3,
-        FORWARD_RIGHT = 4,
-        FORWARD_LEFT = 5,
-        BACKWARD_RIGHT = 6,
-        BACKWARD_LEFT = 7,
-        CLOCKWISE = 8,
+    class MOTION_DIRECTION():
+        FORWARD = 0
+        BACKWARD = 1
+        LEFT = 2
+        RIGHT = 3
+        FORWARD_RIGHT = 4
+        FORWARD_LEFT = 5
+        BACKWARD_RIGHT = 6
+        BACKWARD_LEFT = 7
+        CLOCKWISE = 8
         ANTI_CLOCKWISE = 9
     
-    class COMMAND_IDS(enum.Enum):
-        MOVEMENT_WITH_DURATION = 1,
-        CONTINOUS_MOVEMENT = 2,
+    class COMMAND_IDS():
+        MOVEMENT_WITH_DURATION = 1
+        CONTINOUS_MOVEMENT = 2
         STOP_WHEELS = 3
         UPDATE_PARTICULAR_WHEEL = 4
     
-    class WHEEL_DIRECTION(enum.Enum):
-        FORWARD = 0,
+    class WHEEL_DIRECTION():
+        FORWARD = 0
         BACKWARD = 1
+
+    class MOTION_STATE():
+        speed = 15
+        dir = 0
+
 
 
     def __init__(self, port='/dev/ttyACM0', baudRate=115200, **kwargs):
@@ -147,7 +152,7 @@ class abluoWheelsApi:
     def sendSerial(self, command, param1=0, param2=0, param3=0):
         payload = "{},{},{},{}\n".format(command, param1, param2, param3)
         # payload = (b'sending string to Arduino')
-        self._serialPort.write(payload.encode())
+        self._serconn.write(payload.encode())
 
     def __del__(self):
         self._serconn.close()
