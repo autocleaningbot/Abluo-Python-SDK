@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import inputs
-from abluo_sdk.abluo_wheels import abluoWheelsApi
+from abluo_sdk.abluo_api import abluoWheelsApi, abluoToolsApi
 
 def linear(state):
     if state == -1:
@@ -128,7 +128,7 @@ def event_loop(events):
 
 if __name__ == '__main__':
     pads = inputs.devices.gamepads
-    abluoWheels = abluoWheelsApi()
+    abluoWheels = abluoWheelsApi('/dev/ttyACM0')
     #check if gamepad is connected
     if len(pads) == 0:
         raise Exception("Couldn't find any Gamepads!")

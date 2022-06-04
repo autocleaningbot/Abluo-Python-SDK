@@ -290,8 +290,8 @@ void setup()
     {
         pinMode(digitalPins[index], OUTPUT);
     }
-    pwmToolsController.init(150,100,toolPwmPins);
-    pwmWheelsController.init(1,58, wheelPwmPins);
+    pwmToolsController.init(150, 100, toolPwmPins);
+    pwmWheelsController.init(1, 58, wheelPwmPins);
 }
 
 void loop()
