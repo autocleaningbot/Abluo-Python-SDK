@@ -349,22 +349,22 @@ void handleCommand()
     {
     case 0: // M1_A - Front Left
     {
-      updateDcMotorState(motorIndex, status, wheelDirection, speed, set_M1A_D1, set_M1A_D2, brake_M1A);
+      updateDcMotorState(WHEELS_INDEX::FRONT_LEFT, status, wheelDirection, speed, set_M1A_D1, set_M1A_D2, brake_M1A);
       break;
     }
     case 1: // M1_B - Front Right
     {
-      updateDcMotorState(motorIndex, status, wheelDirection, speed, set_M1B_D1, set_M1B_D2, brake_M1B);
+      updateDcMotorState(WHEELS_INDEX::FRONT_RIGHT, status, wheelDirection, speed, set_M1B_D1, set_M1B_D2, brake_M1B);
       break;
     }
     case 2: // M2_A - Back Left
     {
-      updateDcMotorState(motorIndex, status, wheelDirection, speed, set_M2A_D1, set_M2A_D2, brake_M2A);
+      updateDcMotorState(WHEELS_INDEX::BACK_LEFT, status, wheelDirection, speed, set_M2A_D1, set_M2A_D2, brake_M2A);
       break;
     }
     case 3: // M2_B - Back Right
     {
-      updateDcMotorState(motorIndex, status, wheelDirection, speed, set_M2B_D1, set_M2B_D2, brake_M2B);
+      updateDcMotorState(WHEELS_INDEX::BACK_RIGHT, status, wheelDirection, speed, set_M2B_D1, set_M2B_D2, brake_M2B);
       break;
     }
     }

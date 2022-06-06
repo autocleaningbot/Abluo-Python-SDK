@@ -77,7 +77,8 @@ const byte digitalPins[digitalPinCount] = {M1_IN1, M1_IN2, M1_IN3, M1_IN4, M2_IN
 // Millis Timer
 unsigned long currentMillis = millis();
 unsigned long previousMillis = 0;
-unsigned long millisInterval = 250;
+unsigned long millisInterval = 1;
+unsigned long servoAttachWait = 0;
 
 // Process Serial Input
 void processNewData()
@@ -97,6 +98,7 @@ void handleMillis()
     if (currentMillis - previousMillis >= millisInterval)
     {
         previousMillis = currentMillis;
+        handleServoAttachWait();
     }
 }
 
@@ -171,12 +173,16 @@ void brake_M2B()
 void onServo()
 {
     servo.attach(SPIN);
-    servo.write(135);
+    servo.write(115);
+    servoAttachWait = 1000;
+    // delay(1000)
 }
 void offServo()
 {
     servo.attach(SPIN);
-    servo.write(179);
+    servo.write(185);
+    servoAttachWait = 1000;
+    // delay(1000)
 }
 
 void setupTools()
@@ -296,6 +302,15 @@ void setup()
     pwmWheelsController.init(1, 58, wheelPwmPins);
 }
 
+void handleServoAttachWait() {
+    if (servoAttachWait > 0) {
+        servoAttachWait--;
+        if(servoAttachWait = 0) {
+            servo.detach();
+        }
+    }
+}
+
 void loop()
 {
     currentMicros = micros();
@@ -303,4 +318,5 @@ void loop()
     pwmWheelsController.handlePWM();
     recvWithEndMarker();
     processNewData();
+    handleMillis();
 }
