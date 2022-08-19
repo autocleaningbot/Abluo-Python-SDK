@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import inputs
 from abluo_sdk.abluo_api import abluoWheelsApi, abluoToolsApi
+import time
 
 def linear(state):
     if state == -1:
@@ -130,7 +131,15 @@ if __name__ == '__main__':
     pads = inputs.devices.gamepads
     abluoWheels = abluoWheelsApi('/dev/ttyACM0')
     #check if gamepad is connected
-    if len(pads) == 0:
+    if len(pads) > 0:
+        print("Initialising...")
+        while not any(["Logitech Logitech Cordless RumblePad 2" in pad.name for pad in pads]):
+            time.sleep(1)
+            inputs.devices.gamepads = []
+            inputs.devices = inputs.DeviceManager()
+            pads = inputs.devices.gamepads
+        print("Ready for input")
+    else:
         raise Exception("Couldn't find any Gamepads!")
 
     try: 
