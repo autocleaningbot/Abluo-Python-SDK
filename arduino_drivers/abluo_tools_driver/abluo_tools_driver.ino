@@ -173,16 +173,16 @@ void brake_M2B()
 void onServo()
 {
     servo.attach(SPIN);
-    servo.write(115);
+    servo.write(132);
     servoAttachWait = 1000;
-    // delay(1000)
+//     delay(1000);
 }
 void offServo()
 {
     servo.attach(SPIN);
-    servo.write(185);
+    servo.write(190);
     servoAttachWait = 1000;
-    // delay(1000)
+//     delay(1000);
 }
 
 void setupTools()
@@ -291,9 +291,11 @@ void handleUpdate()
 void setup()
 {
     // put your setup code here, to run once:
-    Serial.begin(115200);
+    Serial.begin(230400);
     Serial.println("<Arduino is ready>");
     delay(1000);
+//    servo.attach(SPIN);
+
     for (int index = 0; index < digitalPinCount; index++)
     {
         pinMode(digitalPins[index], OUTPUT);

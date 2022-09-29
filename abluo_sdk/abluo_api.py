@@ -49,7 +49,7 @@ class abluoTool:
             self._toolId, self._status, self._direction, self._speed)
         # payload = (b'sending string to Arduino')
         self._serialPort.write(payload.encode())
-        time.sleep(0.5)
+        # time.sleep(0.5)
 
     def toString(self):
         toolInfo = """-----\n
@@ -63,7 +63,7 @@ class abluoTool:
 
 
 class abluoToolsApi:
-    def __init__(self, port='/dev/ttyACM0', baudRate=115200, **kwargs):
+    def __init__(self, port='/dev/ttyACM1', baudRate=115200, **kwargs):
         """
         The python wrapper controller of Abluo
 
@@ -194,7 +194,7 @@ class abluoWheelsApi:
         :param port: port name of connected serial microcontroller
         :param baudRate: baudRate for connected serial microcontroller
         """
-        self._serconn = serial.Serial(port, baudRate, timeout=1)
+        self._serconn = serial.Serial(port, baudRate, timeout=1, write_timeout = 1)
 
     def sendDurationMovementCommand(self, motionDirection, speed, duration):
         self.sendSerial(self.COMMAND_IDS.MOVEMENT_WITH_DURATION, motionDirection, speed, duration)
@@ -211,7 +211,11 @@ class abluoWheelsApi:
     def sendSerial(self, command, param1=0, param2=0, param3=0):
         payload = "{},{},{},{}\n".format(command, param1, param2, param3)
         # payload = (b'sending string to Arduino')
-        self._serconn.write(payload.encode())
+        try:
+            self._serconn.write(payload.encode())
+        except serial.SerialTimeoutException as sertimeout:
+            print("Write timed out")
+            # Add rumble to controller
 
     def __del__(self):
         self._serconn.close()
@@ -230,7 +234,7 @@ class abluoWheelsApi:
 
 
 if __name__ == "__main__":
-    abluoTools = abluoToolsApi(port='/dev/ttyACM0')
+    abluoTools = abluoToolsApi(port='/dev/ttyACM1', baudRate=230400)
     # abluoWheels = abluoWheelsApi(port='/dev/ttyACM1')
     abluoTools.testTools()
     # abluoWheels.testMovement()
