@@ -2,7 +2,7 @@
 import inputs
 import time
 from importlib import reload
-from abluo_sdk.abluo_api import abluoWheelsApi, abluoToolsApi
+from abluo_sdk.abluo_api_i2c import abluoWheelsApi, abluoToolsApi
 
 def linear(state):
     if state == -1:
@@ -129,7 +129,7 @@ def event_loop(events):
 
 
 if __name__ == '__main__':
-    abluoWheels = abluoWheelsApi('/dev/ttyACM0')
+    abluoWheels = abluoWheelsApi(1, 0x70)
     setupTries = 5
     while setupTries > 0:
         if setupTries < 5:

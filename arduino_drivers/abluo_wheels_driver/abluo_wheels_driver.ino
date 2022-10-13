@@ -21,31 +21,32 @@
   1 : BACKWARD
   2 : LEFT
   3 : RIGHT
-  4 : CLOCKWISE
-  5 : ANTI-CLOCKWISE
+  8 : CLOCKWISE
+  9 : ANTI-CLOCKWISE
 */
 #include "src/SERIAL_PROCESSING.h"
 #include "src/PWM_PROCESSING.h"
 
 #define BAUD_RATE 115200
 // DC Controller 1 - Motor 1
-#define M1A_EN 39
-#define M1_IN1 35
-#define M1_IN2 37
+#define M1A_EN 9
+#define M1_IN1 48
+#define M1_IN2 49
 
 // DC Controller 1 - Motor 2
-#define M1B_EN 38
-#define M1_IN3 36
-#define M1_IN4 34
+#define M1B_EN 13
+#define M1_IN3 47
+#define M1_IN4 43
 
 // DC Controller 2 - Motor 1
-#define M2A_EN 50
-#define M2_IN1 46
-#define M2_IN2 48
+#define M2A_EN 10
+#define M2_IN1 12
+#define M2_IN2 11
+
 // DC Controller 2 - Motor 2
-#define M2B_EN 51
-#define M2_IN3 49
-#define M2_IN4 47
+#define M2B_EN 6
+#define M2_IN3 7
+#define M2_IN4 8
 
 #define SPEED_LIMIT 25
 
@@ -367,7 +368,8 @@ void handleCommand()
       updateDcMotorState(WHEELS_INDEX::BACK_RIGHT, status, wheelDirection, speed, set_M2B_D1, set_M2B_D2, brake_M2B);
       break;
     }
-    }
+    };
+    break;
   }
   default:
   {
