@@ -1,5 +1,5 @@
 /***
- * @file abluo_tools.ino
+ * @file tools_i2c.ino
  * @brief Abluo Tool Control Driver for Arduino Mega
  *
  * Takes in Serial Input of the form <toolId,status,direction,speed>
@@ -13,12 +13,13 @@
  * 3. M1B - Water Pump DC | <toolId,status,direction,speed>   | status: 1- ON, 0: OFF, direction: 1,0, speed: 0 - 100
  * 4. M2A - Wheel 1       | <toolId,status,direction,speed>   | status: 1- ON, 0: OFF, direction: 1,0, speed: 0 - 100
  *
- * @author Rishab Patwari (patwariri@gmail.com)
+ * @author Rishab Patwari (patwariri@gmail.com) & Wang Huachen (huachenw24@gmail.com)
  * @references: https://www.baldengineer.com/software-pwm-with-millis.html
  */
 #define DEFINE_VARIABLES
 #include <Servo.h>
-#include "src/SERIAL_PROCESSING.h"
+#include <Wire.h>
+#include "src/I2C_PROCESSING.h"
 #include "src/PWM_PROCESSING.h"
 
 // Motor Controller 1 - Tool Controller 1: DC Motor + Water Pump
@@ -39,8 +40,6 @@
 #define M2_IN3 0
 #define M2_IN4 6
 #define M2B_EN 3
-
-
 
 Servo servo;
 unsigned long currentMicros = micros();
@@ -281,25 +280,24 @@ void handleUpdate()
     }
     default:
     {
-        Serial.println("[ERROR] Invalid Tool ID - " + payload[0]);
+        // Serial.println("[ERROR] Invalid Tool ID - " + payload[0]);
         break;
     }
     }
-    Serial.println("[DONE]");
+    // Serial.println("[DONE]");
 }
 
 void setup()
 {
     // put your setup code here, to run once:
-    Serial.begin(115200);
-    Serial.println("<Arduino is ready>");
-    delay(1000);
-    for (int index = 0; index < digitalPinCount; index++)
-    {
-        pinMode(digitalPins[index], OUTPUT);
-    }
-    pwmToolsController.init(150, 100, toolPwmPins);
-    pwmWheelsController.init(1, 58, wheelPwmPins);
+    Wire.begin(0x60);
+    Wire.onReceive(receiveEvent);
+   for (int index = 0; index < digitalPinCount; index++)
+   {
+       pinMode(digitalPins[index], OUTPUT);
+   }
+   pwmToolsController.init(150, 100, toolPwmPins);
+   pwmWheelsController.init(1, 58, wheelPwmPins);
 }
 
 void handleServoAttachWait() {
@@ -313,10 +311,9 @@ void handleServoAttachWait() {
 
 void loop()
 {
-    currentMicros = micros();
-    pwmToolsController.handlePWM();
-    pwmWheelsController.handlePWM();
-    recvWithEndMarker();
-    processNewData();
-    handleMillis();
+   currentMicros = micros();
+   pwmToolsController.handlePWM();
+   pwmWheelsController.handlePWM();
+   processNewData();
+   handleMillis();
 }
