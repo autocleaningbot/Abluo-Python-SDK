@@ -129,25 +129,18 @@ def event_loop(events):
 
 
 if __name__ == '__main__':
+    pads = inputs.devices.gamepads
     abluoWheels = abluoWheelsApi('/dev/ttyACM0')
-    setupTries = 5
-    while setupTries > 0:
-        if setupTries < 5:
-            reload(inputs)
-        pads = inputs.devices.gamepads
-        #check if gamepad is connected
-        if len(pads) == 0:
-            print("Gamepad not found, trying %i more times." % setupTries)
-        elif "RumblePad" in repr(pads[0]):
-            break
-        else:
-            print("Wrong input mode/controller detected, trying %i more times." % setupTries)
-        time.sleep(3)
-        setupTries-=1
-        if setupTries == 0:
-            print("Exceeded try count, please check controller and restart program.")
-            exit()
-    print("Controller ready")
+    if len(pads) > 0:
+        print("Initialising...")
+        while not any(["Logitech Logitech Cordless RumblePad 2" in pad.name for pad in pads]):
+            time.sleep(1)
+            inputs.devices.gamepads = []
+            inputs.devices = inputs.DeviceManager()
+            pads = inputs.devices.gamepads
+        print("Ready for input")
+    else:
+        raise Exception("Couldn't find any Gamepads!")
 
     try: 
         while True:

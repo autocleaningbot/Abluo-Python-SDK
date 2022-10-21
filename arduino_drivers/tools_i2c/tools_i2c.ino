@@ -39,8 +39,13 @@
 #define M2_IN2 12
 #define M2_IN3 0
 #define M2_IN4 6
-#define M2B_EN 3
+#define M2B_EN 1
 
+#define ESTOP_INT 3
+
+// Helpers
+bool settinguUp = true;
+bool emergency = false;
 Servo servo;
 unsigned long currentMicros = micros();
 
@@ -287,23 +292,46 @@ void handleUpdate()
     // Serial.println("[DONE]");
 }
 
+void emergencyStop()
+{
+    unsigned long interrupt_time = millis();
+    if (interrupt_time - last_interrupt_time > 500)
+    {
+        if (digitalRead(ESTOP_INT) == HIGH)
+        {
+            emergency = true;
+            stopAllMotors();
+            else
+            {
+                emergency = false;
+            }
+        }
+    }
+}
+
 void setup()
 {
     // put your setup code here, to run once:
     Wire.begin(0x60);
     Wire.onReceive(receiveEvent);
-   for (int index = 0; index < digitalPinCount; index++)
-   {
-       pinMode(digitalPins[index], OUTPUT);
-   }
-   pwmToolsController.init(150, 100, toolPwmPins);
-   pwmWheelsController.init(1, 58, wheelPwmPins);
+    for (int index = 0; index < digitalPinCount; index++)
+    {
+        pinMode(digitalPins[index], OUTPUT);
+    }
+    pinMode(ESTOP_INT, INPUT_PULLUP);
+    attachInterrupt(digitalPinToInterrupt(ESTOP_INT), emergencyStop, CHANGE);
+    pwmToolsController.init(150, 100, toolPwmPins);
+    pwmWheelsController.init(1, 58, wheelPwmPins);
+    settingUp = false;
 }
 
-void handleServoAttachWait() {
-    if (servoAttachWait > 0) {
+void handleServoAttachWait()
+{
+    if (servoAttachWait > 0)
+    {
         servoAttachWait--;
-        if(servoAttachWait = 0) {
+        if (servoAttachWait = 0)
+        {
             servo.detach();
         }
     }
@@ -311,9 +339,12 @@ void handleServoAttachWait() {
 
 void loop()
 {
-   currentMicros = micros();
-   pwmToolsController.handlePWM();
-   pwmWheelsController.handlePWM();
-   processNewData();
-   handleMillis();
+    if (!settingUp && !emergency)
+    {
+        currentMicros = micros();
+        pwmToolsController.handlePWM();
+        pwmWheelsController.handlePWM();
+        processNewData();
+        handleMillis();
+    }
 }
