@@ -49,9 +49,11 @@
 #define BR_IN2 7
 
 #define SPEED_LIMIT 25
+#define ESTOP_INT 3
 
 // Helpers
 bool settingUp = true;
+bool emergency = false;
 typedef void (*functiontype)();
 unsigned long currentMicros = micros();
 unsigned long currentMillis = millis();
@@ -388,22 +390,41 @@ void processNewData()
   newData = false;
 }
 
+void emergencyStop()
+{
+  unsigned long interrupt_time = millis();
+  if (interrupt_time - last_interrupt_time > 500)
+  {
+    if (digitalRead(ESTOP_INT) == HIGH)
+    {
+      emergency = true;
+      stopAllMotors();
+      else
+      {
+        emergency = false;
+      }
+    }
+  }
+}
+
 void setup()
 {
   // Begin I2C and Setup Pins
-  Wire.begin(0x60);
+  Wire.begin(0x70);
   Wire.onReceive(receiveEvent);
   for (int index = 0; index < digitalPinCount; index++)
   {
     pinMode(digitalPins[index], OUTPUT);
   }
+  pinMode(ESTOP_INT, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(ESTOP_INT), emergencyStop, CHANGE);
   pwmMotorsController.init(motorMicroInterval, motorPwmMax, motorPwmPins, motorPinsCount);
   settingUp = false;
 }
 
 void loop()
 {
-  if (!settingUp)
+  if (!settingUp && !emergency)
   {
     processNewData();
     pwmMotorsController.handlePWM();

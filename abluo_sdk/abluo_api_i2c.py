@@ -8,7 +8,7 @@
 
 import enum
 from tokenize import String
-import smbus
+import smbus2 as smbus
 import time
 
 
@@ -74,8 +74,8 @@ class abluoToolsApi:
         """
         The python wrapper controller of Abluo
 
-        :param port: port name of connected serial microcontroller
-        :param baudRate: baudRate for connected serial microcontroller
+        :param i2cBus: bus of I2C on master
+        :param i2cAddress: i2c address for connected microcontroller
         """
         self.tool1 = abluoTool(1, "Brush Servo", i2cBus, i2cAddress)
         self.tool2 = abluoTool(2, "Brush Motor", i2cBus, i2cAddress)
@@ -192,8 +192,8 @@ class abluoWheelsApi:
         """
         Sends commands to wheel controller
 
-        :param port: port name of connected serial microcontroller
-        :param baudRate: baudRate for connected serial microcontroller
+        :param i2cBus: bus of I2C on master
+        :param i2cAddress: i2c address for connected microcontroller
         """
         self._i2cBus = i2cBus
         self._i2cAddress = i2cAddress
@@ -232,11 +232,30 @@ class abluoWheelsApi:
         self.sendDurationMovementCommand(self.MOTION_DIRECTION.BACKWARD,15,1500)
         # Go Left
 
+class abluoEncodersApi:
+    def __init__(self, i2cBus, i2cAddress, **kwargs):
+        """
+        Gets encoder data from the wheels
 
+        :param i2cBus: bus of I2C on master
+        :param i2cAddress: i2c address for connected microcontroller
+        """
+        self._i2cBus = i2cBus
+        self._i2cAddress = i2cAddress
+
+    def readEncoders(self):
+        wire = smbus.SMBus(self._i2cBus)
+        spdbytes = wire.read_i2c_block_data(self._i2cAddress, 0x0, 35)
+        spdstring = spdbytes.decode('utf-8')
+        fl, fr, bl, br = spdstring.split(',')
+        return float(fl), float(fr), float(bl), float(br)
 
 
 if __name__ == "__main__":
     abluoTools = abluoToolsApi(1, 0x60)
     abluoWheels = abluoWheelsApi(1, 0x70)
+    abluoEncoders = abluoEncodersApi(1, 0x65)
     abluoTools.testTools()
     abluoWheels.testMovement()
+    fl, fr, bl, br = abluoEncoders.readEncoders()
+    print(fl, fr, bl, br)
