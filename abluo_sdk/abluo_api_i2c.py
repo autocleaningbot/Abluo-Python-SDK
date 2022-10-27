@@ -204,8 +204,8 @@ class abluoWheelsApi:
     def sendContinuousMovementCommand(self, motionDirection, speed):
         self.sendCommand(self.COMMAND_IDS.CONTINOUS_MOVEMENT, motionDirection, speed)
 
-    def sendWheelMotorStatus(self, wheelDirection, speed, motorIndex, status):
-        self.sendCommand(self.COMMAND_IDS.UPDATE_PARTICULAR_WHEEL, wheelDirection, speed, motorIndex, status)
+    def sendWheelMotorStatus(self, wheelDirection, speed, motorIndex):
+        self.sendCommand(self.COMMAND_IDS.UPDATE_PARTICULAR_WHEEL, wheelDirection, speed, motorIndex)
 
     def stopAllWheels(self):
         self.sendCommand(self.COMMAND_IDS.STOP_WHEELS)
@@ -245,9 +245,11 @@ class abluoEncodersApi:
 
     def readEncoders(self):
         wire = smbus.SMBus(self._i2cBus)
-        spdbytes = wire.read_i2c_block_data(self._i2cAddress, 0x0, 35)
-        spdstring = spdbytes.decode('utf-8')
-        fl, fr, bl, br = spdstring.split(',')
+        read = smbus.i2c_msg.read(self._i2cAddress, 31)
+        wire.i2c_rdwr(read)
+        spdbytes = list(read)
+        spdstring = bytes(spdbytes).decode('ascii')
+        fl, fr, bl, br = spdstring[1:].split(',')
         return float(fl), float(fr), float(bl), float(br)
 
 
@@ -255,7 +257,7 @@ if __name__ == "__main__":
     abluoTools = abluoToolsApi(1, 0x60)
     abluoWheels = abluoWheelsApi(1, 0x70)
     abluoEncoders = abluoEncodersApi(1, 0x65)
-    abluoTools.testTools()
-    abluoWheels.testMovement()
+    #abluoTools.testTools()
+    #abluoWheels.testMovement()
     fl, fr, bl, br = abluoEncoders.readEncoders()
     print(fl, fr, bl, br)

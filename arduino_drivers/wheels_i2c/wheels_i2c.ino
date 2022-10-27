@@ -39,14 +39,14 @@
 #define FR_IN2 47
 
 // Back Left Wheel - DC Controller 2 Motor 1
-#define BL_EN 10
-#define BL_IN1 11
-#define BL_IN2 12
+#define BL_EN 6
+#define BL_IN1 7
+#define BL_IN2 8
 
 // Back Right Wheel - DC Controller 2 Motor 2
-#define BR_EN 6
-#define BR_IN1 8
-#define BR_IN2 7
+#define BR_EN 10
+#define BR_IN1 12
+#define BR_IN2 11
 
 #define SPEED_LIMIT 25
 #define ESTOP_INT 3
@@ -55,6 +55,7 @@
 bool settingUp = true;
 bool emergency = false;
 typedef void (*functiontype)();
+unsigned long last_interrupt_time = millis();
 unsigned long currentMicros = micros();
 unsigned long currentMillis = millis();
 unsigned long motion_duration;
@@ -344,27 +345,26 @@ void handleCommand()
     int wheelDirection = payload[1];
     int speed = payload[2];
     int motorIndex = payload[3];
-    int status = payload[4];
     switch (motorIndex)
     {
     case 0: // M1_A - Front Left
     {
-      updateDcMotorState(WHEELS_INDEX::FRONT_LEFT, status, wheelDirection, speed, set_FL_Forward, set_FL_Backward, brake_FL);
+      updateDcMotorState(WHEELS_INDEX::FRONT_LEFT, 1, wheelDirection, speed, set_FL_Forward, set_FL_Backward, brake_FL);
       break;
     }
     case 1: // M1_B - Front Right
     {
-      updateDcMotorState(WHEELS_INDEX::FRONT_RIGHT, status, wheelDirection, speed, set_FR_Forward, set_FR_Backward, brake_FR);
+      updateDcMotorState(WHEELS_INDEX::FRONT_RIGHT, 1, wheelDirection, speed, set_FR_Forward, set_FR_Backward, brake_FR);
       break;
     }
     case 2: // M2_A - Back Left
     {
-      updateDcMotorState(WHEELS_INDEX::BACK_LEFT, status, wheelDirection, speed, set_BL_Forward, set_BL_Backward, brake_BL);
+      updateDcMotorState(WHEELS_INDEX::BACK_LEFT, 1, wheelDirection, speed, set_BL_Forward, set_BL_Backward, brake_BL);
       break;
     }
     case 3: // M2_B - Back Right
     {
-      updateDcMotorState(WHEELS_INDEX::BACK_RIGHT, status, wheelDirection, speed, set_BR_Forward, set_BR_Backward, brake_BR);
+      updateDcMotorState(WHEELS_INDEX::BACK_RIGHT, 1, wheelDirection, speed, set_BR_Forward, set_BR_Backward, brake_BR);
       break;
     }
     }
@@ -395,14 +395,15 @@ void emergencyStop()
   unsigned long interrupt_time = millis();
   if (interrupt_time - last_interrupt_time > 500)
   {
-    if (digitalRead(ESTOP_INT) == HIGH)
+    last_interrupt_time = interrupt_time;
+    if (digitalRead(ESTOP_INT) == LOW)
     {
       emergency = true;
       stopAllMotors();
-      else
-      {
-        emergency = false;
-      }
+    } 
+    else
+    {
+      emergency = false;
     }
   }
 }
@@ -411,6 +412,7 @@ void setup()
 {
   // Begin I2C and Setup Pins
   Wire.begin(0x70);
+  Wire.setClock(400000);
   Wire.onReceive(receiveEvent);
   for (int index = 0; index < digitalPinCount; index++)
   {
