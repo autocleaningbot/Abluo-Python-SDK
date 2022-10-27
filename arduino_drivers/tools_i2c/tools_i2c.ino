@@ -44,8 +44,9 @@
 #define ESTOP_INT 3
 
 // Helpers
-bool settinguUp = true;
+bool settingUp = true;
 bool emergency = false;
+unsigned long last_interrupt_time = millis();
 Servo servo;
 unsigned long currentMicros = micros();
 
@@ -297,14 +298,18 @@ void emergencyStop()
     unsigned long interrupt_time = millis();
     if (interrupt_time - last_interrupt_time > 500)
     {
-        if (digitalRead(ESTOP_INT) == HIGH)
+        last_interrupt_time = interrupt_time;
+        if (digitalRead(ESTOP_INT) == LOW)
         {
+            brake_M1A();
+            brake_M1B();
+            brake_M2A();
+            brake_M2B();
             emergency = true;
-            stopAllMotors();
-            else
-            {
-                emergency = false;
-            }
+        }
+        else
+        {
+            emergency = false;
         }
     }
 }
@@ -313,6 +318,7 @@ void setup()
 {
     // put your setup code here, to run once:
     Wire.begin(0x60);
+    Wire.setClock(400000);
     Wire.onReceive(receiveEvent);
     for (int index = 0; index < digitalPinCount; index++)
     {

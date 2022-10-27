@@ -34,104 +34,15 @@ float ang_vel_FL = 0;
 float ang_vel_FR = 0;
 float ang_vel_BL = 0;
 float ang_vel_BR = 0;
-
-void setup()
-{
-  Wire.begin(0x65);
-  Wire.onRequest(requestEvent);
-  pinMode(ENC_FL_A, INPUT);
-  pinMode(ENC_FL_B, INPUT);
-  pinMode(ENC_FR_A, INPUT);
-  pinMode(ENC_FR_B, INPUT);
-  pinMode(ENC_BL_A, INPUT);
-  pinMode(ENC_BL_B, INPUT);
-  pinMode(ENC_BR_A, INPUT);
-  pinMode(ENC_BR_B, INPUT);
-  attachInterrupt(digitalPinToInterrupt(ENC_FL_A), readFL, RISING);
-  attachInterrupt(digitalPinToInterrupt(ENC_FR_A), readFR, RISING);
-  attachInterrupt(digitalPinToInterrupt(ENC_BL_A), readBL, RISING);
-  attachInterrupt(digitalPinToInterrupt(ENC_BR_A), readBR, RISING);
-}
+char final_FL[8];
+char final_FR[8];
+char final_BL[8];
+char final_BR[8];
+char speedChars[31];
 
 void requestEvent()
 {
-  char speeds[35]; // 8*4+3
-  char buf[8];
-  dtostrf(ang_vel_FL, 7, 3, buf);
-  speeds += buf;
-  speeds += ",";
-  dtostrf(ang_vel_FR, 7, 3, buf);
-  speeds += buf;
-  speeds += ",";
-  dtostrf(ang_vel_BL, 7, 3, buf);
-  speeds += buf;
-  speeds += ",";
-  dtostrf(ang_vel_BR, 7, 3, buf);
-  speeds += buf;
-  Wire.write(speeds);
-}
-
-void loop()
-{
-
-  // time difference
-  long currT = micros();
-  float deltaT = ((float)(currT - prevT)) / (1.0e6);
-
-  if (deltaT > measure_interval)
-  {
-
-    prevT = currT;
-
-    // Read the position in an atomic block to avoid a potential
-    // misread if the interrupt coincides with this code running
-    // see: https://www.arduino.cc/reference/en/language/variables/variable-scope-qualifiers/volatile/
-    int posb_FL = 0;
-    int posb_FR = 0;
-    int posb_BL = 0;
-    int posb_BR = 0;
-
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-    {
-      posb_FL = posFL;
-      posb_FR = posFR;
-      posb_BL = posBL;
-      posb_BR = posBR;
-    }
-
-    // FOR MEASURING ENCODER REV
-    //    Serial.print("Front Left: ");
-    //    Serial.println(posb_FL);
-    //    Serial.print("Front Right: ");
-    //    Serial.println(posb_FR);
-    //    Serial.print("Back Left: ");
-    //    Serial.println(posb_BL);
-    //    Serial.print("Back Right: ");
-    //    Serial.println(posb_BR);
-
-    // rad/s
-    ang_vel_FL = (float)(posb_FL / deltaT / ENC_FL_REV * rev_to_rad);
-    ang_vel_FR = (float)(posb_FR / deltaT / ENC_FR_REV * rev_to_rad);
-    ang_vel_BL = (float)(posb_BL / deltaT / ENC_BL_REV * rev_to_rad);
-    ang_vel_BR = (float)(posb_BR / deltaT / ENC_BR_REV * rev_to_rad);
-    Serial.print("Front Left: ");
-    Serial.println(ang_vel_FL);
-    Serial.print("Front Right: ");
-    Serial.println(ang_vel_FR);
-    Serial.print("Back Left: ");
-    Serial.println(ang_vel_BL);
-    Serial.print("Back Right: ");
-    Serial.println(ang_vel_BR);
-    Serial.println();
-
-    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
-    {
-      posFL = 0;
-      posFR = 0;
-      posBL = 0;
-      posBR = 0;
-    }
-  }
+  Wire.write(speedChars, 31);
 }
 
 void readFL()
@@ -183,5 +94,104 @@ void readBR()
   else
   {
     posBR--;
+  }
+}
+
+void setup()
+{
+//  Serial.begin(9600);
+  Wire.begin(0x65);
+  Wire.setClock(400000);
+  Wire.onRequest(requestEvent);
+  pinMode(ENC_FL_A, INPUT);
+  pinMode(ENC_FL_B, INPUT);
+  pinMode(ENC_FR_A, INPUT);
+  pinMode(ENC_FR_B, INPUT);
+  pinMode(ENC_BL_A, INPUT);
+  pinMode(ENC_BL_B, INPUT);
+  pinMode(ENC_BR_A, INPUT);
+  pinMode(ENC_BR_B, INPUT);
+  attachInterrupt(digitalPinToInterrupt(ENC_FL_A), readFL, RISING);
+  attachInterrupt(digitalPinToInterrupt(ENC_FR_A), readFR, RISING);
+  attachInterrupt(digitalPinToInterrupt(ENC_BL_A), readBL, RISING);
+  attachInterrupt(digitalPinToInterrupt(ENC_BR_A), readBR, RISING);
+}
+
+void loop()
+{
+
+  // time difference
+  long currT = micros();
+  float deltaT = ((float)(currT - prevT)) / (1.0e6);
+
+  if (deltaT > measure_interval)
+  {
+
+    prevT = currT;
+
+    // Read the position in an atomic block to avoid a potential
+    // misread if the interrupt coincides with this code running
+    // see: https://www.arduino.cc/reference/en/language/variables/variable-scope-qualifiers/volatile/
+    int posb_FL = 0;
+    int posb_FR = 0;
+    int posb_BL = 0;
+    int posb_BR = 0;
+
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+    {
+      posb_FL = posFL;
+      posb_FR = posFR;
+      posb_BL = posBL;
+      posb_BR = posBR;
+    }
+
+    // FOR MEASURING ENCODER REV
+    //    Serial.print("Front Left: ");
+    //    Serial.println(posb_FL);
+    //    Serial.print("Front Right: ");
+    //    Serial.println(posb_FR);
+    //    Serial.print("Back Left: ");
+    //    Serial.println(posb_BL);
+    //    Serial.print("Back Right: ");
+    //    Serial.println(posb_BR);
+
+    // rad/s
+    ang_vel_FL = (float)(posb_FL / deltaT / ENC_FL_REV * rev_to_rad);
+    ang_vel_FR = (float)(posb_FR / deltaT / ENC_FR_REV * rev_to_rad);
+    ang_vel_BL = (float)(posb_BL / deltaT / ENC_BL_REV * rev_to_rad);
+    ang_vel_BR = (float)(posb_BR / deltaT / ENC_BR_REV * rev_to_rad);
+//    Serial.print("Front Left: ");
+//    Serial.println(ang_vel_FL);
+//    Serial.print("Front Right: ");
+//    Serial.println(ang_vel_FR);
+//    Serial.print("Back Left: ");
+//    Serial.println(ang_vel_BL);
+//    Serial.print("Back Right: ");
+//    Serial.println(ang_vel_BR);
+//    Serial.println();
+
+    dtostrf(ang_vel_FL, 7, 3, final_FL);
+    strcat(speedChars, final_FL);
+    strcat(speedChars, ",");
+    dtostrf(ang_vel_FR, 7, 3, final_FR);
+    strcat(speedChars, final_FR);
+    strcat(speedChars, ",");
+    dtostrf(ang_vel_BL, 7, 3, final_BL);
+    strcat(speedChars, final_BL);
+    strcat(speedChars, ",");
+    dtostrf(ang_vel_BR, 7, 3, final_BR);
+    strcat(speedChars, final_BR);
+//    Serial.print("speedChars: ");
+//    Serial.println(speedChars);
+    
+    speedChars[0] = 0;
+    
+    ATOMIC_BLOCK(ATOMIC_RESTORESTATE)
+    {
+      posFL = 0;
+      posFR = 0;
+      posBL = 0;
+      posBR = 0;
+    }
   }
 }
