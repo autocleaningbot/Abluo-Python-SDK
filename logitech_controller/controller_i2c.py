@@ -30,7 +30,7 @@ def sideway(state):
         abluoWheels.sendContinuousMovementCommand(abluoWheels.MOTION_STATE.dir
                                                 ,abluoWheels.MOTION_STATE.speed)
 
-    if state == 1: 
+    if state == 1:
         print("Moving Right")
         #code to move right
         abluoWheels.MOTION_STATE.dir = 3
@@ -88,12 +88,12 @@ def water_urinal(state):
         #code
 
 def increase_speed(state):
-    if state == 1:
+    if state == 1 and abluoWheels.moving == True:
         abluoWheels.MOTION_STATE.speed += 2
         abluoWheels.sendContinuousMovementCommand(abluoWheels.MOTION_STATE.dir,abluoWheels.MOTION_STATE.speed)
 
 def decrease_speed(state):
-    if state == 1:
+    if state == 1 and abluoWheels.moving == True:
         abluoWheels.MOTION_STATE.speed -=2
         abluoWheels.sendContinuousMovementCommand(abluoWheels.MOTION_STATE.dir,abluoWheels.MOTION_STATE.speed)
 
@@ -152,8 +152,8 @@ def event_loop(events):
             call(event.state)
 
 if __name__ == '__main__':
-    abluoWheels = abluoWheelsApi(1, 0x70)
-    abluoEncoders = abluoEncodersApi(1, 0x65)
+    abluoWheels = abluoWheelsApi(8, 0x70)
+    abluoEncoders = abluoEncodersApi(8, 0x65)
     setupTries = 5
     while setupTries > 0:
         if setupTries < 5:
@@ -173,12 +173,6 @@ if __name__ == '__main__':
             print("Exceeded try count, please check controller and restart program.")
             exit()
     print("Controller ready")
-    #abluoWheels.sendWheelMotorStatus(0, 15, 3)
-    #fl, fr, bl, br = abluoEncoders.readEncoders()
-    #print(fl)
-    #print(fr)
-    #print(bl)
-    #print(br)
 
     try: 
         while True:
