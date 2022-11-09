@@ -296,7 +296,7 @@ void handleUpdate()
 void emergencyStop()
 {
     unsigned long interrupt_time = millis();
-    if (interrupt_time - last_interrupt_time > 500)
+    if (interrupt_time - last_interrupt_time > 50)
     {
         last_interrupt_time = interrupt_time;
         if (digitalRead(ESTOP_INT) == LOW)
@@ -306,10 +306,6 @@ void emergencyStop()
             brake_M2A();
             brake_M2B();
             emergency = true;
-        }
-        else
-        {
-            emergency = false;
         }
     }
 }
@@ -325,7 +321,7 @@ void setup()
         pinMode(digitalPins[index], OUTPUT);
     }
     pinMode(ESTOP_INT, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(ESTOP_INT), emergencyStop, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(ESTOP_INT), emergencyStop, FALLING);
     pwmToolsController.init(150, 100, toolPwmPins);
     pwmWheelsController.init(1, 58, wheelPwmPins);
     settingUp = false;
@@ -345,12 +341,31 @@ void handleServoAttachWait()
 
 void loop()
 {
-    if (!settingUp && !emergency)
+    if (digitalRead(ESTOP_INT) == LOW)
     {
+      brake_M1A();
+      brake_M1B();
+      brake_M2A();
+      brake_M2B();
+      emergency = true;
+    }
+    else
+    {
+      emergency = false;
+    }
+    if (!settingUp)
+    {
+      if (!emergency)
+      {
         currentMicros = micros();
         pwmToolsController.handlePWM();
         pwmWheelsController.handlePWM();
         processNewData();
         handleMillis();
+      }
+      else
+      {
+        parseInput();
+      }
     }
 }

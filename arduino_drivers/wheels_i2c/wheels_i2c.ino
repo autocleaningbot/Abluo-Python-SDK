@@ -393,17 +393,13 @@ void processNewData()
 void emergencyStop()
 {
   unsigned long interrupt_time = millis();
-  if (interrupt_time - last_interrupt_time > 500)
+  if (interrupt_time - last_interrupt_time > 50)
   {
     last_interrupt_time = interrupt_time;
     if (digitalRead(ESTOP_INT) == LOW)
     {
       emergency = true;
       stopAllMotors();
-    } 
-    else
-    {
-      emergency = false;
     }
   }
 }
@@ -419,17 +415,33 @@ void setup()
     pinMode(digitalPins[index], OUTPUT);
   }
   pinMode(ESTOP_INT, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(ESTOP_INT), emergencyStop, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ESTOP_INT), emergencyStop, FALLING);
   pwmMotorsController.init(motorMicroInterval, motorPwmMax, motorPwmPins, motorPinsCount);
   settingUp = false;
 }
 
 void loop()
 {
-  if (!settingUp && !emergency)
+  if (digitalRead(ESTOP_INT) == LOW)
   {
-    processNewData();
-    pwmMotorsController.handlePWM();
-    handleDurationBasedMotorMotion();
+    emergency = true;
+    stopAllMotors();
+  } 
+  else
+  {
+    emergency = false;
+  }
+  if (!settingUp)
+  {
+    if (!emergency)
+    {
+      processNewData();
+      pwmMotorsController.handlePWM();
+      handleDurationBasedMotorMotion();
+    }
+    else
+    {
+      parseInput();
+    }
   }
 }
