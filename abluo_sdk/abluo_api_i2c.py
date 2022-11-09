@@ -197,18 +197,23 @@ class abluoWheelsApi:
         """
         self._i2cBus = i2cBus
         self._i2cAddress = i2cAddress
+        self.moving = False
 
     def sendDurationMovementCommand(self, motionDirection, speed, duration):
         self.sendCommand(self.COMMAND_IDS.MOVEMENT_WITH_DURATION, motionDirection, speed, duration)
+        self.moving = True
 
     def sendContinuousMovementCommand(self, motionDirection, speed):
         self.sendCommand(self.COMMAND_IDS.CONTINOUS_MOVEMENT, motionDirection, speed)
+        self.moving = True
 
     def sendWheelMotorStatus(self, wheelDirection, speed, motorIndex):
         self.sendCommand(self.COMMAND_IDS.UPDATE_PARTICULAR_WHEEL, wheelDirection, speed, motorIndex)
+        self.moving = True
 
     def stopAllWheels(self):
         self.sendCommand(self.COMMAND_IDS.STOP_WHEELS)
+        self.moving = False
 
     def sendCommand(self, command, param1=0, param2=0, param3=0):
         payload = "{},{},{},{}\n".format(command, param1, param2, param3)
