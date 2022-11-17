@@ -2,7 +2,7 @@
 import inputs
 import time
 from importlib import reload
-# from abluo_sdk.abluo_api_i2c import abluoWheelsApi, abluoToolsApi, abluoEncodersApi
+from abluo_sdk.abluo_api_i2c import abluoWheelsApi, abluoToolsApi, abluoEncodersApi
 
 class AbluoController:
     def __init__(self, i2cBus, toolsAddr, wheelsAddr, encodersAddr, **kwargs):

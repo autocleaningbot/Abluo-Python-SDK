@@ -177,7 +177,8 @@ if __name__ == '__main__':
     try: 
         while True:
             event_loop(inputs.get_gamepad())
-    except OSError:
+    except OSError as e:
+        print(e)
         print("Controller disconnected. Exiting.")
     except KeyboardInterrupt:
         print("Bye!")
