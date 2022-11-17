@@ -179,6 +179,6 @@ class ROS(tk.Frame):
 if __name__ == "__main__":
     app = tkinterApp()
     app.title("Abluo Command Interface")
-    app.state("zoomed")
-    # app.attributes('-fullscreen', True)
+    #app.state("zoomed")
+    app.attributes('-fullscreen', True)
     app.mainloop()
