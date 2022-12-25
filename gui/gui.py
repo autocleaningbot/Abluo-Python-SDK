@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import ttk
 import tkinter.scrolledtext as st
 sys.path.append("..")
-from logitech_controller.controller_gui import AbluoController
+from logitech_controller.controller import AbluoController
 
 
 def rosPlaceHolder():
