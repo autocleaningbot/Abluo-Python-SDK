@@ -1,0 +1,5 @@
+setup.py
+logitech_controller.egg-info/PKG-INFO
+logitech_controller.egg-info/SOURCES.txt
+logitech_controller.egg-info/dependency_links.txt
+logitech_controller.egg-info/top_level.txt

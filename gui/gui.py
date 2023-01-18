@@ -5,8 +5,7 @@ import datetime
 import tkinter as tk
 from tkinter import ttk
 import tkinter.scrolledtext as st
-sys.path.append("..")
-from logitech_controller.controller import AbluoController
+from controller import AbluoController
 
 
 def rosPlaceHolder():
@@ -108,7 +107,7 @@ class tkinterApp(tk.Tk):
         elif cont == Controller:
             frame.tkraise()
             sys.stdout = TextRedirector(frame.text_area, "stdout")
-            controller = AbluoController(8, 0x60, 0x70, 0x65)
+            controller = AbluoController(1, 0x60, 0x70, 0x65)
             self.controllerThread = thread_with_trace(target=controller.main, daemon=True)
             self.controllerThread.start()
         elif cont == ROS:
