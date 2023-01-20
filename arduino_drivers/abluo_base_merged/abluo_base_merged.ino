@@ -26,8 +26,8 @@
 
 // Front Right Wheel - DC Controller 1 Motor 2
 #define FR_EN 48
-#define FR_IN1 50
-#define FR_IN2 52
+#define FR_IN1 52
+#define FR_IN2 50
 
 // Back Left Wheel - DC Controller 2 Motor 1
 #define BL_EN 23
@@ -36,23 +36,23 @@
 
 // Back Right Wheel - DC Controller 2 Motor 2
 #define BR_EN 22
-#define BR_IN1 24
-#define BR_IN2 26
+#define BR_IN1 26
+#define BR_IN2 24
 
 #define ESTOP_INT 17
 
 // Encoder input pins (only 1 needs to be interrupt)
-#define ENC_FL_A 2
-#define ENC_FL_B 4
+#define ENC_FL_A 19
+#define ENC_FL_B 8
 
-#define ENC_FR_A 3
-#define ENC_FR_B 5
+#define ENC_FR_A 18
+#define ENC_FR_B 9
 
-#define ENC_BL_A 18
-#define ENC_BL_B 16
+#define ENC_BL_A 2
+#define ENC_BL_B 10
 
-#define ENC_BR_A 19
-#define ENC_BR_B 17
+#define ENC_BR_A 3
+#define ENC_BR_B 11
 
 // Tick count for 1 rev
 #define ENC_FL_REV 550
@@ -398,6 +398,7 @@ void setup()
   pinMode(HIGH_PIN_2, OUTPUT);
   pinMode(LOW_PIN_1, OUTPUT);
   pinMode(LOW_PIN_2, OUTPUT);
+  pinMode(ESTOP_INT, INPUT_PULLUP);
   digitalWrite(HIGH_PIN_1, HIGH);
   digitalWrite(HIGH_PIN_2, HIGH);
   digitalWrite(LOW_PIN_1, LOW);

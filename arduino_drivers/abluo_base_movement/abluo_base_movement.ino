@@ -1,9 +1,9 @@
 /***
-   Arduino Code: Command movement of 4 meccanum wheels and get encoder data
-   @file abluo_base.ino
+   Arduino Code: Command movement of 4 meccanum wheels and get encoder data using a single Arduino Mega
+   @file abluo_base_merged.ino
    @author Wang Huachen (huachenw24@gmail.com)
    @references: https://www.baldengineer.com/software-pwm-with-millis.html
-   @version: 2.0 (6 December 2022)
+   @version: 2.0 (27 December 2022)
 
   * Takes in I2C Input of the form <fl, fr, bl, br>
   * Updates Data Model to store MotorState
@@ -13,27 +13,33 @@
 #include "src/I2C_PROCESSING.h"
 #include "src/PWM_PROCESSING.h"
 
+#define HIGH_PIN_1 46
+#define HIGH_PIN_2 47
+
+#define LOW_PIN_1 28
+#define LOW_PIN_2 29
+
 // Front Left Wheel - DC Controller 1 Motor 1
-#define FL_EN 9
-#define FL_IN1 49
-#define FL_IN2 48
+#define FL_EN 49
+#define FL_IN1 51
+#define FL_IN2 53
 
 // Front Right Wheel - DC Controller 1 Motor 2
-#define FR_EN 13
-#define FR_IN1 43
-#define FR_IN2 47
+#define FR_EN 48
+#define FR_IN1 52
+#define FR_IN2 50
 
 // Back Left Wheel - DC Controller 2 Motor 1
-#define BL_EN 6
-#define BL_IN1 7
-#define BL_IN2 8
+#define BL_EN 23
+#define BL_IN1 25
+#define BL_IN2 27
 
 // Back Right Wheel - DC Controller 2 Motor 2
-#define BR_EN 10
-#define BR_IN1 12
-#define BR_IN2 11
+#define BR_EN 22
+#define BR_IN1 26
+#define BR_IN2 24
 
-#define ESTOP_INT 3
+#define ESTOP_INT 17
 
 // Helpers
 bool settingUp = true;
@@ -252,32 +258,30 @@ void processNewData()
   newData = false;
 }
 
-void emergencyStop()
-{
-  unsigned long interrupt_time = millis();
-  if (interrupt_time - last_interrupt_time > 50)
-  {
-    last_interrupt_time = interrupt_time;
-    if (digitalRead(ESTOP_INT) == LOW)
-    {
-      emergency = true;
-      stopAllMotors();
-    }
-  }
-}
-
 void setup()
 {
-  // Begin I2C and Setup Pins
+  // Begin I2C
   Wire.begin(0x70);
   Wire.setClock(400000);
   Wire.onReceive(receiveEvent);
+  
+  // Set 5V and GND Pins
+  pinMode(HIGH_PIN_1, OUTPUT);
+  pinMode(HIGH_PIN_2, OUTPUT);
+  pinMode(LOW_PIN_1, OUTPUT);
+  pinMode(LOW_PIN_2, OUTPUT);
+  pinMode(ESTOP_INT, INPUT_PULLUP);
+  digitalWrite(HIGH_PIN_1, HIGH);
+  digitalWrite(HIGH_PIN_2, HIGH);
+  digitalWrite(LOW_PIN_1, LOW);
+  digitalWrite(LOW_PIN_1, LOW);
+  
+  // Setup Motor Pins
   for (int index = 0; index < digitalMotorPinCount; index++)
   {
     pinMode(digitalMotorPins[index], OUTPUT);
   }
-  pinMode(ESTOP_INT, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(ESTOP_INT), emergencyStop, FALLING);
+
   pwmMotorsController.init(motorMicroInterval, motorPwmMax, motorPwmPins, motorPinsCount);
   settingUp = false;
 }

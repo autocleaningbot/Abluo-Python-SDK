@@ -22,6 +22,13 @@ class abluoTools:
         self.wire = smbus.SMBus(i2cBus)
         time.sleep(1)
 
+    def sendCommand(self, tool, value):
+        payload = "{:03d},{:03d}\n".format(tool, value)
+        payload_byte = []
+        for c in payload:
+            payload_byte.append(ord(c))
+        self.wire.write_i2c_block_data(self._i2cAddress, 0x00, payload_byte)
+
 class abluoWheels:
     def __init__(self, i2cBus, i2cAddress, **kwargs):
         """
