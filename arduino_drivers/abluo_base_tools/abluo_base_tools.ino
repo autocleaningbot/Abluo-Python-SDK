@@ -4,8 +4,9 @@
 #define MOTOR_EN 9
 #define MOTOR_IN1 7
 #define MOTOR_IN2 8
-#define SERVO 3
+#define SERVO 11
 #define ESTOP_INT 5
+#define STEAM_IN 3
 
 bool settingUp = true;
 bool emergency = false;
@@ -17,6 +18,15 @@ const byte digitalPinCount = 2;
 const byte digitalPins[digitalPinCount] = {MOTOR_IN1, MOTOR_IN2};
 
 Servo BrushServo;
+
+void start_STEAM(int state)
+{
+  if (state == 1){
+    digitalWrite(STEAM_IN, HIGH);
+  } else {
+    digitalWrite(STEAM_IN, LOW);
+  }
+}
 
 void move_MOTOR(int duty)
 {
@@ -54,6 +64,9 @@ void handleCommand()
   } else if (toolSelect == 1) {
     int servoAngle = payload[1];
     move_SERVO(servoAngle);
+  } else if (toolSelect == 2) {
+    int steamState = payload[1];
+    start_STEAM(steamState);
   }
 }
 
@@ -72,6 +85,8 @@ void setup() {
   Wire.setClock(400000);
   Wire.onReceive(receiveEvent);
 
+  pinMode(STEAM_IN, OUTPUT);
+
   pinMode(ESTOP_INT, INPUT_PULLUP);
 
   BrushServo.attach(SERVO); 
@@ -87,6 +102,7 @@ void setup() {
   }
 
   settingUp = false;
+
 }
 
 void loop() {
