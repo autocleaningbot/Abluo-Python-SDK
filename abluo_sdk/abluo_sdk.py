@@ -80,16 +80,26 @@ class abluoEncoders:
 
 if __name__ == "__main__":
     # For testing purposes
-    wheels = abluoWheels(1, 112)
+    # wheels = abluoWheels(1, 112)
+    tools = abluoTools(1,96)
     #encoders = abluoEncoders(1, 112)
     looping = True
     i = 0
-    while looping:
-        # print(i)
-        wheels.sendCommand([-15, 15, -15, 15])
-        #print(encoders.readEncoders())
-        time.sleep(0.01)
-        i+=1
-        if i == 100:
-            looping = False
-    wheels.stop()
+    tools.sendCommand(0,100)
+    time.sleep(0.1)
+    tools.sendCommand(1,180)
+    time.sleep(2)
+    tools.sendCommand(1,90)
+    time.sleep(0.1)
+    # tools.sendCommand(2,1)
+    # time.sleep(25)
+    # tools.sendCommand(2,0)
+    # while looping:
+    #     # print(i)
+    #     wheels.sendCommand([-15, 15, -15, 15])
+    #     #print(encoders.readEncoders())
+    #     time.sleep(0.01)
+    #     i+=1
+    #     if i == 100:
+    #         looping = False
+    # wheels.stop()
