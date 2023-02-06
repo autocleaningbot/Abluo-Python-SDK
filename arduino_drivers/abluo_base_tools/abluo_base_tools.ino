@@ -1,9 +1,9 @@
 #include <Servo.h> 
 #include "src/I2C_PROCESSING.h"
 
-#define MOTOR_EN 9
-#define MOTOR_IN1 7
-#define MOTOR_IN2 8
+#define MOTOR_EN 6
+#define MOTOR_IN1 8
+#define MOTOR_IN2 9
 #define SERVO 11
 #define ESTOP_INT 5
 #define STEAM_IN 3
@@ -100,7 +100,7 @@ void setup() {
   {
     pinMode(digitalPins[index], OUTPUT);
   }
-
+  
   settingUp = false;
 
 }
