@@ -117,6 +117,7 @@ void loop() {
   {
     emergency = false;
   }
+  emergency = false;
   if (!settingUp)
   {
     if (!emergency)
