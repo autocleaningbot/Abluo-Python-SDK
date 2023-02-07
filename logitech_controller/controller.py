@@ -3,7 +3,7 @@ import inputs
 import time
 from importlib import reload
 from enum import Enum
-from abluo_sdk import abluoTools, abluoWheels, abluoEncoders
+from abluo_sdk import  abluoWheels, abluoEncoders
 
 WHEEL_INITIAL_PWM = 15
 WHEEL_MAX_PWM = 25
@@ -19,9 +19,8 @@ class AbluoDir(Enum):
     CLOCKWISE = 6
 
 class AbluoController:
-    def __init__(self, i2cBus, toolsAddr, wheelsAddr, encodersAddr, **kwargs):
+    def __init__(self, i2cBus, wheelsAddr, encodersAddr, **kwargs):
         self.i2cBus = i2cBus
-        self.toolsAddr = toolsAddr
         self.wheelsAddr = wheelsAddr
         self.encodersAddr = encodersAddr
         self.wheelPWM = WHEEL_INITIAL_PWM
@@ -193,7 +192,6 @@ class AbluoController:
 
     def main(self):
         try:
-            self.abluoTools = abluoTools(self.i2cBus, self.toolsAddr)
             self.abluoWheels = abluoWheels(self.i2cBus, self.wheelsAddr)
             self.abluoEncoders = abluoEncoders(self.i2cBus, self.encodersAddr)
             setupTries = 5

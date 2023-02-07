@@ -1,9 +1,10 @@
 #include <Servo.h> 
-#include "src/I2C_PROCESSING.h"
+// #include "src/I2C_PROCESSING.h"
+#include "src/SERIAL_PROCESSING.h"
 
-#define MOTOR_EN 9
-#define MOTOR_IN1 7
-#define MOTOR_IN2 8
+#define MOTOR_EN 6
+#define MOTOR_IN1 8
+#define MOTOR_IN2 9
 #define SERVO 11
 #define ESTOP_INT 5
 #define STEAM_IN 3
@@ -81,9 +82,10 @@ void processNewData()
 }
 
 void setup() {
-  Wire.begin(0x60);
-  Wire.setClock(400000);
-  Wire.onReceive(receiveEvent);
+  //Wire.begin(0x60);
+  //Wire.setClock(400000);
+  //Wire.onReceive(receiveEvent);
+  Serial.begin(9600);
 
   pinMode(STEAM_IN, OUTPUT);
 
@@ -100,7 +102,7 @@ void setup() {
   {
     pinMode(digitalPins[index], OUTPUT);
   }
-
+  
   settingUp = false;
 
 }
@@ -115,10 +117,12 @@ void loop() {
   {
     emergency = false;
   }
+  emergency = false;
   if (!settingUp)
   {
     if (!emergency)
     {
+      recvWithEndMarker();
       processNewData();
     }
     else
