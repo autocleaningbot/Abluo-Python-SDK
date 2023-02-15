@@ -10,44 +10,38 @@
   * Executes Software PWM to control multiple motors handling Motors
 
 */
-
+#define ENCODER_DO_NOT_USE_INTERRUPTS
 #include <avr/dtostrf.h>
 #include "src/I2C_PROCESSING.h"
+#include <Encoder.h>
 
 // Front Left Wheel - DC Controller 1 Motor 1
-#define FL_EN 54
-#define FL_IN1 55
-#define FL_IN2 56
+#define FL_EN 2
+#define FL_IN1 3
+#define FL_IN2 4
 
 // Front Right Wheel - DC Controller 1 Motor 2
-#define FR_EN 57
-#define FR_IN1 59
-#define FR_IN2 58
+#define FR_EN 5
+#define FR_IN1 7
+#define FR_IN2 6
 
 // Back Left Wheel - DC Controller 2 Motor 1
-#define BL_EN 60
-#define BL_IN1 61
-#define BL_IN2 62
+#define BL_EN 8
+#define BL_IN1 9
+#define BL_IN2 10
 
 // Back Right Wheel - DC Controller 2 Motor 2
-#define BR_EN 63
-#define BR_IN1 65
-#define BR_IN2 64
+#define BR_EN 11
+#define BR_IN1 13
+#define BR_IN2 12
 
-#define ESTOP_INT 10
+#define ESTOP_INT 22
 
 // Encoder input pins (only 1 needs to be interrupt)
-#define ENC_FL_A 2
-#define ENC_FL_B 3
-
-#define ENC_FR_A 5
-#define ENC_FR_B 4
-
-#define ENC_BL_A 6
-#define ENC_BL_B 7
-
-#define ENC_BR_A 9
-#define ENC_BR_B 8
+Encoder fl_Enc(54, 55);
+Encoder fr_Enc(57, 56);
+Encoder bl_Enc(58, 59);
+Encoder br_Enc(61, 60);
 
 // Tick count for 1 rev
 #define ENC_FL_REV 100
@@ -60,14 +54,9 @@ bool settingUp = true;
 bool emergency = false;
 
 // Constants
-const int measure_interval = 500; // interval for velocity measurement (us)
 const float twopi = 6.283185307; // 2pi
 
 // Variables
-volatile int posFL = 0;
-volatile int posFR = 0;
-volatile int posBL = 0;
-volatile int posBR = 0;
 long prevMicros = micros();
 long prevMillis = millis();
 float ang_vel_FL = 0;
@@ -96,10 +85,6 @@ const byte motorPwmPins[motorPinsCount] = {FL_EN, FR_EN, BL_EN, BR_EN};
 // Motor Direction Pins
 const byte digitalMotorPinCount = 8;
 const byte digitalMotorPins[digitalMotorPinCount] = {FL_IN1, FL_IN2, FR_IN1, FR_IN2, BL_IN1, BL_IN2, BR_IN1, BR_IN2};
-
-// Digital Pins Encoders
-const byte digitalEncoderPinCount = 8;
-const byte digitalEncoderPins[digitalEncoderPinCount] = {ENC_FL_A, ENC_FL_B, ENC_FR_A, ENC_FR_B, ENC_BL_A, ENC_BL_B, ENC_BR_A, ENC_BR_B};
 
 // WHEELS DIRECTION & BRAKE
 void move_FL(int duty)
@@ -204,86 +189,12 @@ void processNewData()
   newData = false;
 }
 
-void readFL()
-{
-  int fla = digitalRead(ENC_FL_A);
-  if (fla > 0)
-  {
-    int flb = digitalRead(ENC_FL_B);
-    if (flb > 0)
-    {
-      posFL++;
-    }
-    else
-    {
-      posFL--;
-    }
-  }
-}
-
-void readFR()
-{
-  int fra = digitalRead(ENC_FR_A);
-  if (fra > 0)
-  {
-    int frb = digitalRead(ENC_FR_B);
-    if (frb > 0)
-    {
-      posFR++;
-    }
-    else
-    {
-      posFR--;
-    }
-  }
-}
-
-void readBL()
-{
-  int bla = digitalRead(ENC_BL_A);
-  if (bla > 0)
-  {
-    int blb = digitalRead(ENC_BL_B);
-    if (blb > 0)
-    {
-      posBL++;
-    }
-    else
-    {
-      posBL--;
-    }
-  }
-}
-
-void readBR()
-{
-  int bra = digitalRead(ENC_BR_A);
-  if (bra > 0)
-  {
-    int brb = digitalRead(ENC_BR_B);
-    if (brb > 0)
-    {
-      posBR++;
-    }
-    else
-    {
-      posBR--;
-    }
-  }
-}
-
 void readEncoders()
 {
-  long currMicros = micros();
-  float deltaMicros = (float)(currMicros - prevMicros);
-  if (deltaMicros > measure_interval)
-  {
-    readFL();
-    readFR();
-    readBL();
-    readBR();
-    prevMicros = currMicros;
-  }
+  fl_Enc.read();
+  fr_Enc.read();
+  bl_Enc.read();
+  br_Enc.read();
 }
 
 void requestEvent()
@@ -291,28 +202,33 @@ void requestEvent()
   long currMillis = millis();
   float deltaMillis = (float)(currMillis - prevMillis);
 
+  long posFL = fl_Enc.read();
+  long posFR = fr_Enc.read();
+  long posBL = bl_Enc.read();
+  long posBR = br_Enc.read();
+
   ang_vel_FL = (float)(posFL * twopi / deltaMillis * 1000 / ENC_FL_REV);
   ang_vel_FR = (float)(posFR * twopi / deltaMillis * 1000 / ENC_FR_REV);
   ang_vel_BL = (float)(posBL * twopi / deltaMillis * 1000 / ENC_BL_REV);
   ang_vel_BR = (float)(posBR * twopi / deltaMillis * 1000 / ENC_BR_REV);
 
   speedChars[0] = 0;
-  dtostrf(ang_vel_FL, 7, 3, padded_FL);
+  dtostrf(ang_vel_FL, 7, 2, padded_FL);
   strcat(speedChars, padded_FL);
   strcat(speedChars, ",");
-  dtostrf(ang_vel_FR, 7, 3, padded_FR);
+  dtostrf(ang_vel_FR, 7, 2, padded_FR);
   strcat(speedChars, padded_FR);
   strcat(speedChars, ",");
-  dtostrf(ang_vel_BL, 7, 3, padded_BL);
+  dtostrf(ang_vel_BL, 7, 2, padded_BL);
   strcat(speedChars, padded_BL);
   strcat(speedChars, ",");
-  dtostrf(ang_vel_BR, 7, 3, padded_BR);
+  dtostrf(ang_vel_BR, 7, 2, padded_BR);
   strcat(speedChars, padded_BR);
 
-  posFL = 0;
-  posFR = 0;
-  posBL = 0;
-  posBR = 0;
+  fl_Enc.write(0);
+  fr_Enc.write(0);
+  bl_Enc.write(0);
+  br_Enc.write(0);
 
   Wire.write(speedChars, 31);
   prevMillis = millis();
@@ -328,18 +244,19 @@ void setup()
   
   // Set 5V and GND Pins
   pinMode(ESTOP_INT, INPUT_PULLUP);
+
+  // Setup Enable Pins
+  for (int index = 0; index < motorPinsCount; index++)
+  {
+    pinMode(motorPwmPins[index], OUTPUT);
+  }
   
   // Setup Motor Pins
   for (int index = 0; index < digitalMotorPinCount; index++)
   {
     pinMode(digitalMotorPins[index], OUTPUT);
   }
-
-  // Setup Encoder Pins
-  for (int index = 0; index < digitalEncoderPinCount; index++)
-  {
-    pinMode(digitalEncoderPins[index], INPUT);
-  }
+  
   settingUp = false;
 }
 
